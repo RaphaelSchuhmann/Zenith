@@ -8,8 +8,6 @@ syntax and first-class Windows/Linux support.
 
 ## Features
 
----
-
 ### Task Definitions
 Define tasks in a `Taskfile.txt`;
 ```txt
