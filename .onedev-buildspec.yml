@@ -18,7 +18,7 @@ jobs:
       type: DefaultInterpreter
       commands: |
         git config --global --unset http.extraHeader
-        git push -f https://raphaelschuhmann:@secret:GitHub-PAT@@@github.com/raphaelschuhmann/zenith.git
+        git pull -f https://raphaelschuhmann:@secret:GitHub-PAT@@@github.com/raphaelschuhmann/zenith.git
     useTTY: true
     condition: SUCCESSFUL
     optional: false
