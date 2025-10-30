@@ -8,17 +8,25 @@ namespace Zenith.Reader
         private string FileContent = "";
         public void ReadFile(string path)
         {
-            if (path.Length <= 0)
+            if (string.IsNullOrEmpty(path))
             {
                 return;
             }
 
-            var fileContent = File.ReadAllLines(path).ToList();
+            try
+            {
+                var fileContent = File.ReadAllLines(path).ToList();
 
-            fileContent.RemoveAll(line => line.StartsWith("#"));
-            fileContent.RemoveAll(line => string.IsNullOrWhiteSpace(line));
-            
-            FileContent = string.Join(Environment.NewLine, fileContent).Trim();
+                fileContent.RemoveAll(line => line.StartsWith("#"));
+                fileContent.RemoveAll(line => string.IsNullOrWhiteSpace(line));
+
+                FileContent = string.Join(Environment.NewLine, fileContent).Trim();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error reading file: {ex.Message}");
+                FileContent = "";
+            }
         }
 
         // DEBUG:
