@@ -39,6 +39,18 @@ jobs:
     withSubmodules: false
     condition: ALWAYS
     optional: false
+  - type: PullRepository
+    name: pull
+    remoteUrl: https://raphaelschuhmann:@secret:GitHub-PAT@@@github.com/raphaelschuhmann/zenith.git
+    userName: raphaelschuhmann
+    passwordSecret: GitHub-PAT
+    targetProject: Zenith
+    accessTokenSecret: GitHub-PAT
+    refs: refs/heads/* refs/tags/*
+    withLfs: false
+    force: true
+    condition: SUCCESSFUL
+    optional: false
   triggers:
   - type: ScheduleTrigger
     cronExpression: 0 0/15 * * * ?
