@@ -43,6 +43,7 @@ jobs:
     name: Pull
     runInContainer: true
     image: alpine/git:1.0.7
+    workingDir: $ONDEV_WORKSPACE
     interpreter:
       type: DefaultInterpreter
       commands: |
