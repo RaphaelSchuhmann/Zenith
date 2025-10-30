@@ -41,7 +41,7 @@ jobs:
     optional: false
   - type: CommandStep
     name: Pull
-    runInContainer: true
+    runInContainer: false
     image: alpine/git:1.0.7
     interpreter:
       type: DefaultInterpreter
