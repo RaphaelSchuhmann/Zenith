@@ -1,2 +1,12 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Zenith v0.1");
+﻿using System;
+
+namespace Zenith
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            Console.WriteLine("Zenith v0.1");
+        }
+    }
+}
