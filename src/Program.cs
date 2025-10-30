@@ -1,4 +1,5 @@
 ﻿using System;
+using Zenith.Reader;
 
 namespace Zenith
 {
@@ -6,7 +7,10 @@ namespace Zenith
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Zenith v0.1");
+            Console.WriteLine("Zenith v0.1\n------------------");
+            TaskfileReader reader = new TaskfileReader();
+            reader.ReadFile("./Taskfile.txt");
+            reader.PrintContent();
         }
     }
 }
