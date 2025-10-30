@@ -31,17 +31,21 @@ jobs:
   timeout: 60
 - name: Pull GitHub
   steps:
-  - type: PullRepository
-    name: pull
-    remoteUrl: https://raphaelschuhmann:@secret:GitHub-PAT@@@github.com/raphaelschuhmann/zenith.git
-    userName: RaphaelSchuhmann
-    passwordSecret: GitHub-PAT
-    accessTokenSecret: GitHub-PAT
-    refs: refs/heads/* refs/tags/*
-    withLfs: false
-    force: false
+  - type: CommandStep
+    name: Pull
+    runInContainer: true
+    image: alpine/git:1.0.7
+    interpreter:
+      type: DefaultInterpreter
+      commands: |
+        git config --global --unset http.extraHeader
+        git pull -f https://raphaelschuhmann:@secret:GitHub-PAT@@@github.com/raphaelschuhmann/zenith.git
+    useTTY: true
     condition: SUCCESSFUL
     optional: false
+  triggers:
+  - type: ScheduleTrigger
+    cronExpression: 0 0 * * * ?
   retryCondition: never
   maxRetries: 3
   retryDelay: 30
