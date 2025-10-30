@@ -31,6 +31,14 @@ jobs:
   timeout: 60
 - name: Pull GitHub
   steps:
+  - type: CheckoutStep
+    name: checkout
+    cloneCredential:
+      type: DefaultCredential
+    withLfs: false
+    withSubmodules: false
+    condition: SUCCESSFUL
+    optional: false
   - type: CommandStep
     name: Pull
     runInContainer: true
