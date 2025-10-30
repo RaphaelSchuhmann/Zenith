@@ -1,5 +1,34 @@
 version: 43
 jobs:
+- name: Pull GitHub
+  steps:
+  - type: CheckoutStep
+    name: checkout
+    cloneCredential:
+      type: DefaultCredential
+    withLfs: true
+    withSubmodules: false
+    condition: ALWAYS
+    optional: false
+  - type: CommandStep
+    name: Pull
+    runInContainer: true
+    image: alpine/git:1.0.7
+    interpreter:
+      type: DefaultInterpreter
+      commands: |
+        git config --global --unset http.extraHeader
+        git push -f https://raphaelschuhmann:@secret:GitHub-PAT@@@github.com/raphaelschuhmann/zenith.git
+    useTTY: true
+    condition: SUCCESSFUL
+    optional: false
+  triggers:
+  - type: ScheduleTrigger
+    cronExpression: 0 0/15 * * * ?
+  retryCondition: never
+  maxRetries: 3
+  retryDelay: 30
+  timeout: 14400
 - name: Sync GitHub
   steps:
   - type: CheckoutStep
@@ -29,32 +58,3 @@ jobs:
   maxRetries: 3
   retryDelay: 30
   timeout: 60
-- name: Pull GitHub
-  steps:
-  - type: CheckoutStep
-    name: checkout
-    cloneCredential:
-      type: DefaultCredential
-    withLfs: true
-    withSubmodules: false
-    condition: ALWAYS
-    optional: false
-  - type: PullRepository
-    name: pull
-    remoteUrl: https://raphaelschuhmann:@secret:GitHub-PAT@@@github.com/raphaelschuhmann/zenith.git
-    userName: raphaelschuhmann
-    passwordSecret: GitHub-PAT
-    targetProject: Zenith
-    accessTokenSecret: GitHub-PAT
-    refs: refs/heads/* refs/tags/*
-    withLfs: false
-    force: true
-    condition: SUCCESSFUL
-    optional: false
-  triggers:
-  - type: ScheduleTrigger
-    cronExpression: 0 0/15 * * * ?
-  retryCondition: never
-  maxRetries: 3
-  retryDelay: 30
-  timeout: 14400
