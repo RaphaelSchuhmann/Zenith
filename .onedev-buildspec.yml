@@ -6,7 +6,7 @@ jobs:
     name: checkout
     cloneCredential:
       type: DefaultCredential
-    withLfs: true
+    withLfs: false
     withSubmodules: false
     condition: ALWAYS
     optional: false
