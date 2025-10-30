@@ -10,16 +10,14 @@ jobs:
     withSubmodules: false
     condition: ALWAYS
     optional: false
-  - type: CommandStep
-    name: Pull
-    runInContainer: true
-    image: alpine/git:1.0.7
-    interpreter:
-      type: DefaultInterpreter
-      commands: |
-        git config --global --unset http.extraHeader
-        git pull -f https://raphaelschuhmann:@secret:GitHub-PAT@@@github.com/raphaelschuhmann/zenith.git
-    useTTY: true
+  - type: PullRepository
+    name: pull
+    remoteUrl: https://github.com/raphaelschuhmann/zenith.git
+    passwordSecret: GitHub-PAT
+    targetProject: Zenith
+    refs: refs/heads/* refs/tags/*
+    withLfs: false
+    force: true
     condition: SUCCESSFUL
     optional: false
   triggers:
