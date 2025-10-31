@@ -1,5 +1,6 @@
 ﻿using System;
 using Zenith.Reader;
+using Zenith.Tokenization;
 
 namespace Zenith
 {
@@ -11,6 +12,10 @@ namespace Zenith
             TaskfileReader reader = new TaskfileReader();
             reader.ReadFile("./Taskfile.txt");
             reader.PrintContent();
+            Console.WriteLine("-----------------------------");
+            Lexer lexer = new Lexer();
+            List<Token> tokens = lexer.Tokenize(reader.FileContent);
+            lexer.PrintTokens(tokens);
         }
     }
 }
