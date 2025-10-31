@@ -154,7 +154,7 @@ namespace Zenith.Tokenization
             if (!string.IsNullOrEmpty(right))
             {
                 // split by commas that are not inside quotes
-                var deps = right.Split(',').Select(d => d.Trim()).Where(d => d.Length > 0);
+                var deps = SplitDependencies(right);
                 bool first = true;
                 foreach (var dep in deps)
                 {
@@ -165,6 +165,42 @@ namespace Zenith.Tokenization
                     _tokens.Add(new Token(TokenType.DEPENDENCY, dep, lineNumber));
                     first = false;
                 }
+            }
+        }
+
+        private static IEnumerable<string> SplitDependencies(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+            {
+                yield break;
+            }
+
+            int start = 0;
+            bool inQuotes = false;
+
+            for (int i = 0; i < input.Length; i++)
+            {
+                char ch = input[i];
+
+                if (ch == '"')
+                {
+                    inQuotes = !inQuotes;
+                }
+                else if (ch == ',' && !inQuotes)
+                {
+                    string candidate = input.Substring(start, i - start).Trim();
+                    if (candidate.Length > 0)
+                    {
+                        yield return candidate;
+                    }
+                    start = i + 1;
+                }
+            }
+
+            string tail = input.Substring(start).Trim();
+            if (tail.Length > 0)
+            {
+                yield return tail;
             }
         }
 
