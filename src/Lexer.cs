@@ -1,5 +1,4 @@
 using System;
-using System.Net;
 using System.Text.RegularExpressions;
 
 namespace Zenith.Tokenization
@@ -236,10 +235,7 @@ namespace Zenith.Tokenization
             Type = type;
             Value = value;
             LineNumber = lineNumber;
-            if (GeneralType != generalType)
-            {
-                GeneralType = generalType;
-            }
+            GeneralType = generalType;
         }
 
         public void PrintToken()
