@@ -140,7 +140,13 @@ namespace Zenith.Parse
                 }
             }
 
-            List<Token> commands = 1 > indexesNewLine.Count - 1 ? tokenGroup.Group[indexesNewLine[0]..] : tokenGroup.Group[indexesNewLine[0]..indexesNewLine[1]];
+            int commandsStart = indexesNewLine[0] + 1;
+            int commandsEnd = indexesNewLine.Count > 1 ? indexesNewLine[1] : tokenGroup.Group.Count;
+            if (commandsStart >= commandsEnd)
+            {
+                throw new SyntaxError("Invalid task declaration, commands can not be empty!", task.LineNumber);
+            }
+            List<Token> commands = tokenGroup.Group[commandsStart..commandsEnd];
             foreach (Token cmd in commands)
             {
                 if (cmd.Value != "")
