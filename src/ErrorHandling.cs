@@ -38,6 +38,11 @@ namespace Zenith.Error
         public IoError(string message, Exception inner) : base(message, inner) { }
     }
 
+    public sealed class Internal : ZenithException
+    {
+        public Internal(string message) : base($"Internal error: {message}") { }
+    }
+
     public sealed class Unknown : ZenithException
     {
         public Unknown() : base("Unknown error") { }

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Zenith.Error;
 
 namespace Zenith.Reader
 {
@@ -10,8 +11,7 @@ namespace Zenith.Reader
         {
             if (string.IsNullOrEmpty(path))
             {
-                Console.WriteLine("No Taskfile was provided.");
-                return;
+                throw new Internal("No file path was found");
             }
 
             try
@@ -34,8 +34,7 @@ namespace Zenith.Reader
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error reading file: {ex.Message}");
-                FileContent = "";
+                throw new IoError("Error while reading Taskfile", ex);
             }
         }
         
