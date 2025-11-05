@@ -1,6 +1,5 @@
 using System;
-using System.Net.WebSockets;
-using System.Runtime.Versioning;
+using Zenith.Error;
 using Zenith.Models;
 using Zenith.Tokenization;
 
@@ -15,8 +14,7 @@ namespace Zenith.Parse
             // Check if list is empty
             if (!tokens.Any())
             {
-                Console.WriteLine("Error: Parser encountered an empty list of tokens!");
-                return taskFile;
+                throw new Internal("Parser encountered an empty list of tokens!");
             }
 
             // Group tokens
@@ -25,19 +23,26 @@ namespace Zenith.Parse
 
             List<TokenGroup> tokenGroups = new();
 
-            for (int i = 0; i < keywordIndexes.Count; i++)
+            try
             {
-                int start = keywordIndexes[i];
+                for (int i = 0; i < keywordIndexes.Count; i++)
+                {
+                    int start = keywordIndexes[i];
 
-                if (i + 1 != keywordIndexes.Count)
-                {
-                    int end = keywordIndexes[i + 1];
-                    tokenGroups.Add(new TokenGroup(tokens[start..end], tokens[keywordIndexes[i]].Type));
+                    if (i + 1 != keywordIndexes.Count)
+                    {
+                        int end = keywordIndexes[i + 1];
+                        tokenGroups.Add(new TokenGroup(tokens[start..end], tokens[keywordIndexes[i]].Type));
+                    }
+                    else
+                    {
+                        tokenGroups.Add(new TokenGroup(tokens[keywordIndexes[i]..], tokens[keywordIndexes[i]].Type));
+                    }
                 }
-                else
-                {
-                    tokenGroups.Add(new TokenGroup(tokens[keywordIndexes[i]..], tokens[keywordIndexes[i]].Type));
-                }
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                throw new Internal($"Invalid operation in parser: {ex.Message}");
             }
 
             foreach (TokenGroup group in tokenGroups)
@@ -52,7 +57,7 @@ namespace Zenith.Parse
                 }
                 else
                 {
-                    // Throw a syntax error, invalid Taskfile
+                    throw new SyntaxError($"Unexpected token {group.Group[0].Value}", group.Group[0].LineNumber);
                 }
             }
 
@@ -91,10 +96,10 @@ namespace Zenith.Parse
         {
             VariableModel variable = new VariableModel();
 
-            if (!tokenGroup.Group.Any())
+            if (tokenGroup.Group.Count <= 1)
             {
-                // Throw warning / error of invalid variable in line x
-                return variable;
+                // Note that tokenGroup here can never be empty since there has to be at least one token to call this function
+                throw new SyntaxError("Incomplete variable declaration", tokenGroup.Group[0].LineNumber);
             }
 
             variable.Name = tokenGroup.Group[1].Value;
@@ -108,13 +113,14 @@ namespace Zenith.Parse
         {
             TaskModel task = new TaskModel();
 
-            if (!tokenGroup.Group.Any())
+            if (tokenGroup.Group.Count <= 1)
             {
-                // Throw warning / error of invalid variable in line x
-                return task;
+                // Note that tokenGroup here can never be empty since there has to be at least one token to call this function
+                throw new SyntaxError("Incomplete task declaration", tokenGroup.Group[0].LineNumber);
             }
 
             task.Name = tokenGroup.Group[1].Value;
+            task.LineNumber = tokenGroup.Group[0].LineNumber;
 
             List<int> indexesNewLine = GetTokenIndexes(tokenGroup.Group, new Token(TokenType.NEWLINE, string.Empty, 0));
 
@@ -129,43 +135,29 @@ namespace Zenith.Parse
                     }
                     else
                     {
-                        // Throw error cause empty dependency
+                        throw new SyntaxError("Invalid task declaration, dependencies can not be empty!\nUse 'null' if you don't want any dependencies", task.LineNumber);
                     }
                 }
             }
 
-            if (1 > indexesNewLine.Count - 1)
+            int commandsStart = indexesNewLine[0] + 1;
+            int commandsEnd = indexesNewLine.Count > 1 ? indexesNewLine[1] : tokenGroup.Group.Count;
+            if (commandsStart >= commandsEnd)
             {
-                List<Token> commands = tokenGroup.Group[indexesNewLine[0]..];
-                foreach (Token cmd in commands)
+                throw new SyntaxError("Invalid task declaration, commands can not be empty!", task.LineNumber);
+            }
+            List<Token> commands = tokenGroup.Group[commandsStart..commandsEnd];
+            foreach (Token cmd in commands)
+            {
+                if (cmd.Value != "")
                 {
-                    if (cmd.Value != "")
-                    {
-                        task.Commands.Add(cmd.Value);
-                    }
-                    else
-                    {
-                        // Throw error cause empty command
-                    }
+                    task.Commands.Add(cmd.Value);
+                }
+                else
+                {
+                    throw new SyntaxError("Invalid task declaration, commands can not be empty!", task.LineNumber);
                 }
             }
-            else
-            {
-                List<Token> commands = tokenGroup.Group[indexesNewLine[0]..indexesNewLine[1]];
-                foreach (Token cmd in commands)
-                {
-                    if (cmd.Value != "")
-                    {
-                        task.Commands.Add(cmd.Value);
-                    }
-                    else
-                    {
-                        // Throw error cause empty command
-                    }
-                }
-            }
-
-            task.LineNumber = tokenGroup.Group[0].LineNumber;
 
             return task;
         }

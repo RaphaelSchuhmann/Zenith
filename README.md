@@ -69,12 +69,12 @@ task all
 
 ### Environment Variables
 Each task inherits the enviornment and includes built-ins:
-| Variable    | Description |
-| -------- | ------- |
-| `${TASK_NAME}`  | Current task name    |
-| `${TASK_ROOT}` | Directory where Taskfile resides     |
-| `${OS}`    | windows / linux / macos    |
-| `${PWD}`    | Current working directory    |
+| Variable      | Description                                       |
+| ------------- | ------------------------------------------------- |
+| `${TASK_NAME}`| Current task name                                 |
+| `${TASK_ROOT}`| Directory where Taskfile resides                  |
+| `${OS}`       | windows / linux / macos                           |
+| `${PWD}`      | Current working directory                         |
 
 ---
 

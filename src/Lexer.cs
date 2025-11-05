@@ -1,5 +1,6 @@
 using System;
 using System.Text.RegularExpressions;
+using Zenith.Error;
 
 namespace Zenith.Tokenization
 {
@@ -17,8 +18,7 @@ namespace Zenith.Tokenization
 
             if (string.IsNullOrEmpty(input))
             {
-                Console.WriteLine("No Taskfile data was provided to lexer");
-                return _tokens; // Returns an empty List
+                throw new TokenError("EOF reached unexpectedly! Is your Taskfile empty?");
             }
 
             string[] lines = input.Split(new[] { '\n' }, StringSplitOptions.None);
@@ -114,8 +114,7 @@ namespace Zenith.Tokenization
             var m = Regex.Match(trimmedLine, @"^set\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$");
             if (!m.Success)
             {
-                _tokens.Add(new Token(TokenType.UNKNOWN, trimmedLine, lineNumber));
-                return;
+                throw new SyntaxError($"Unexpected token {trimmedLine}", lineNumber);
             }
 
             string name = m.Groups[1].Value;
