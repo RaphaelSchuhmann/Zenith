@@ -153,6 +153,7 @@ namespace Zenith.Tokenization
             else
             {
                 // treated left as task name
+                _tokens.Add(new Token(TokenType.KEYWORD_TASK, "task", lineNumber, TokenType.KEYWORD));
                 _tokens.Add(new Token(TokenType.IDENTIFIER, left, lineNumber));
             }
 
