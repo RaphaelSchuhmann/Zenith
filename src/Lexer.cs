@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 using System.Text.RegularExpressions;
 
 namespace Zenith.Tokenization
@@ -22,6 +23,7 @@ namespace Zenith.Tokenization
             }
 
             string[] lines = input.Split(new[] { '\n' }, StringSplitOptions.None);
+            bool handledCommands = false;
 
             for (int i = 0; i < lines.Length; i++)
             {
@@ -30,7 +32,7 @@ namespace Zenith.Tokenization
 
                 // Keep the raw indentation to detect command lines
                 int indent = CountLeadingTabsOrSpaces(rawLine);
-                
+
                 string line = rawLine.TrimEnd('\r');
 
                 if (string.IsNullOrWhiteSpace(line))
@@ -43,8 +45,14 @@ namespace Zenith.Tokenization
                 {
                     string commandText = line.TrimStart();
                     _tokens.Add(new Token(TokenType.COMMAND, commandText, lineNumber));
-                    _tokens.Add(new Token(TokenType.NEWLINE, string.Empty, lineNumber));
+                    handledCommands = true;
                     continue;
+                }
+
+                if (handledCommands)
+                {
+                    _tokens.Add(new Token(TokenType.NEWLINE, string.Empty, lineNumber));
+                    handledCommands = false;
                 }
 
                 // top-level line (no indentation) is ether a "set", a task header or an identifier
@@ -112,7 +120,7 @@ namespace Zenith.Tokenization
             string name = m.Groups[1].Value;
             string rawValue = m.Groups[2].Value.Trim();
 
-            _tokens.Add(new Token(TokenType.KEYWORD_SET, "set", lineNumber));
+            _tokens.Add(new Token(TokenType.KEYWORD_SET, "set", lineNumber, TokenType.KEYWORD));
             _tokens.Add(new Token(TokenType.IDENTIFIER, name, lineNumber));
             _tokens.Add(new Token(TokenType.EQUALS, "=", lineNumber));
 
@@ -138,7 +146,7 @@ namespace Zenith.Tokenization
             // Left might be "task NAME" or just "NAME"
             if (left.StartsWith("task ", StringComparison.Ordinal))
             {
-                _tokens.Add(new Token(TokenType.KEYWORD_TASK, "task", lineNumber));
+                _tokens.Add(new Token(TokenType.KEYWORD_TASK, "task", lineNumber, TokenType.KEYWORD));
                 string after = left.Substring("task ".Length).Trim();
                 _tokens.Add(new Token(TokenType.IDENTIFIER, after, lineNumber));
             }
@@ -210,31 +218,42 @@ namespace Zenith.Tokenization
         {
             foreach (Token token in tokens)
             {
-                Console.WriteLine($"Type: {token.Type}");
-                Console.WriteLine($"Value: {token.Value}");
-                Console.WriteLine($"Line: {token.LineNumber}");
-                Console.WriteLine("---------------------------");
+                token.PrintToken();
             }
         }
     }
 
     public class Token
     {
+        public TokenType GeneralType { get; set; } = TokenType.UNKNOWN;
         public TokenType Type { get; set; }
-        public string? Value { get; set; }
+        public string Value { get; set; } = string.Empty;
         public int LineNumber { get; set; }
 
-        public Token(TokenType type, string? value, int lineNumber)
+        public Token(TokenType type, string value, int lineNumber, TokenType generalType = TokenType.UNKNOWN)
         {
             Type = type;
             Value = value;
             LineNumber = lineNumber;
+            if (GeneralType != generalType)
+            {
+                GeneralType = generalType;
+            }
+        }
+
+        public void PrintToken()
+        {
+            Console.WriteLine($"Type: {Type}");
+            Console.WriteLine($"Value: {Value}");
+            Console.WriteLine($"Line: {LineNumber}");
+            Console.WriteLine($"General Type: {GeneralType}");
+            Console.WriteLine("---------------------------");
         }
     }
 
     public enum TokenType
     {
-        KEYWORD_SET, KEYWORD_TASK, IDENTIFIER, EQUALS, STRING,
+        KEYWORD, KEYWORD_SET, KEYWORD_TASK, IDENTIFIER, EQUALS, STRING,
         DEPENDENCY, COMMAND, NEWLINE, COLON, UNKNOWN
     }
 }
