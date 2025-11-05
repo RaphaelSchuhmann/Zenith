@@ -23,6 +23,7 @@ namespace Zenith.Tokenization
 
             string[] lines = input.Split(new[] { '\n' }, StringSplitOptions.None);
             bool handledCommands = false;
+            int lastCommandLine = 0;
 
             for (int i = 0; i < lines.Length; i++)
             {
@@ -45,12 +46,13 @@ namespace Zenith.Tokenization
                     string commandText = line.TrimStart();
                     _tokens.Add(new Token(TokenType.COMMAND, commandText, lineNumber));
                     handledCommands = true;
+                    lastCommandLine = lineNumber;
                     continue;
                 }
 
                 if (handledCommands)
                 {
-                    _tokens.Add(new Token(TokenType.NEWLINE, string.Empty, lineNumber));
+                    _tokens.Add(new Token(TokenType.NEWLINE, string.Empty, lastCommandLine));
                     handledCommands = false;
                 }
 
