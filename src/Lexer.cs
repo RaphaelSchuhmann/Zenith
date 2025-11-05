@@ -22,6 +22,8 @@ namespace Zenith.Tokenization
             }
 
             string[] lines = input.Split(new[] { '\n' }, StringSplitOptions.None);
+            bool handledCommands = false;
+            int lastCommandLine = 0;
 
             for (int i = 0; i < lines.Length; i++)
             {
@@ -30,7 +32,7 @@ namespace Zenith.Tokenization
 
                 // Keep the raw indentation to detect command lines
                 int indent = CountLeadingTabsOrSpaces(rawLine);
-                
+
                 string line = rawLine.TrimEnd('\r');
 
                 if (string.IsNullOrWhiteSpace(line))
@@ -43,8 +45,15 @@ namespace Zenith.Tokenization
                 {
                     string commandText = line.TrimStart();
                     _tokens.Add(new Token(TokenType.COMMAND, commandText, lineNumber));
-                    _tokens.Add(new Token(TokenType.NEWLINE, string.Empty, lineNumber));
+                    handledCommands = true;
+                    lastCommandLine = lineNumber;
                     continue;
+                }
+
+                if (handledCommands)
+                {
+                    _tokens.Add(new Token(TokenType.NEWLINE, string.Empty, lastCommandLine));
+                    handledCommands = false;
                 }
 
                 // top-level line (no indentation) is ether a "set", a task header or an identifier
@@ -112,7 +121,7 @@ namespace Zenith.Tokenization
             string name = m.Groups[1].Value;
             string rawValue = m.Groups[2].Value.Trim();
 
-            _tokens.Add(new Token(TokenType.KEYWORD_SET, "set", lineNumber));
+            _tokens.Add(new Token(TokenType.KEYWORD_SET, "set", lineNumber, TokenType.KEYWORD));
             _tokens.Add(new Token(TokenType.IDENTIFIER, name, lineNumber));
             _tokens.Add(new Token(TokenType.EQUALS, "=", lineNumber));
 
@@ -138,13 +147,14 @@ namespace Zenith.Tokenization
             // Left might be "task NAME" or just "NAME"
             if (left.StartsWith("task ", StringComparison.Ordinal))
             {
-                _tokens.Add(new Token(TokenType.KEYWORD_TASK, "task", lineNumber));
+                _tokens.Add(new Token(TokenType.KEYWORD_TASK, "task", lineNumber, TokenType.KEYWORD));
                 string after = left.Substring("task ".Length).Trim();
                 _tokens.Add(new Token(TokenType.IDENTIFIER, after, lineNumber));
             }
             else
             {
                 // treated left as task name
+                _tokens.Add(new Token(TokenType.KEYWORD_TASK, "task", lineNumber, TokenType.KEYWORD));
                 _tokens.Add(new Token(TokenType.IDENTIFIER, left, lineNumber));
             }
 
@@ -210,31 +220,39 @@ namespace Zenith.Tokenization
         {
             foreach (Token token in tokens)
             {
-                Console.WriteLine($"Type: {token.Type}");
-                Console.WriteLine($"Value: {token.Value}");
-                Console.WriteLine($"Line: {token.LineNumber}");
-                Console.WriteLine("---------------------------");
+                token.PrintToken();
             }
         }
     }
 
     public class Token
     {
+        public TokenType GeneralType { get; set; } = TokenType.UNKNOWN;
         public TokenType Type { get; set; }
-        public string? Value { get; set; }
+        public string Value { get; set; } = string.Empty;
         public int LineNumber { get; set; }
 
-        public Token(TokenType type, string? value, int lineNumber)
+        public Token(TokenType type, string value, int lineNumber, TokenType generalType = TokenType.UNKNOWN)
         {
             Type = type;
             Value = value;
             LineNumber = lineNumber;
+            GeneralType = generalType;
+        }
+
+        public void PrintToken()
+        {
+            Console.WriteLine($"Type: {Type}");
+            Console.WriteLine($"Value: {Value}");
+            Console.WriteLine($"Line: {LineNumber}");
+            Console.WriteLine($"General Type: {GeneralType}");
+            Console.WriteLine("---------------------------");
         }
     }
 
     public enum TokenType
     {
-        KEYWORD_SET, KEYWORD_TASK, IDENTIFIER, EQUALS, STRING,
+        KEYWORD, KEYWORD_SET, KEYWORD_TASK, IDENTIFIER, EQUALS, STRING,
         DEPENDENCY, COMMAND, NEWLINE, COLON, UNKNOWN
     }
 }
