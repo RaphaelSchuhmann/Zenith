@@ -18,9 +18,6 @@ namespace Zenith.Reader
             {
                 var fileContent = File.ReadAllLines(path).ToList();
 
-                fileContent.RemoveAll(line => line.StartsWith("#"));
-                fileContent.RemoveAll(line => string.IsNullOrWhiteSpace(line));
-
                 // Remove all inline comments
                 List<string>? cleanedLines = new();
 

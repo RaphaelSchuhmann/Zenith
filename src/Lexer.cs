@@ -24,11 +24,15 @@ namespace Zenith.Tokenization
             string[] lines = input.Split(new[] { '\n' }, StringSplitOptions.None);
             bool handledCommands = false;
             int lastCommandLine = 0;
+            int lineNumber = 1;
 
             for (int i = 0; i < lines.Length; i++)
             {
-                int lineNumber = i + 1;
+                lineNumber++;
                 string rawLine = lines[i];
+
+                if (rawLine.StartsWith("#")) continue;
+                if (string.IsNullOrWhiteSpace(rawLine)) continue;
 
                 // Keep the raw indentation to detect command lines
                 int indent = CountLeadingTabsOrSpaces(rawLine);
@@ -165,7 +169,7 @@ namespace Zenith.Tokenization
                 {
                     ErrorReporter.DisplayError(new SyntaxError("Invalid task name 'null'", lineNumber));
                 }
-                
+
                 _tokens.Add(new Token(TokenType.IDENTIFIER, left, lineNumber));
             }
 
