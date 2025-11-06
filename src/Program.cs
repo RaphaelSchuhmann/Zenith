@@ -27,7 +27,7 @@ namespace Zenith
 
             TaskExecutor exec = new TaskExecutor();
             exec.taskfileModel = taskfileModel;
-            exec.ResolveDependencies("tests");
+            exec.ResolveDependencies("run");
             exec.PrintQueue();
         }
     }
