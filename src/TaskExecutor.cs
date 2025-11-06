@@ -14,14 +14,14 @@ namespace Zenith.Executor
         {
             if (string.IsNullOrEmpty(taskName))
             {
-                throw new UserInputError("Task name cannot be empty!");
+                ErrorReporter.DisplayError(new UserInputError("Task name cannot be empty!"));
             }
 
             TaskModel mainTask = taskfileModel.Tasks[FindTaskModelIndex(taskName)];
 
             if (!activeTasks.Add(mainTask.Name))
             {
-                throw new SyntaxError("Infinite loop detected", mainTask.LineNumber);
+                ErrorReporter.DisplayError(new SyntaxError("Infinite loop detected", mainTask.LineNumber));
             }
 
             try
@@ -35,7 +35,7 @@ namespace Zenith.Executor
                         (bool, int) isDuplicate = CheckDuplicateTasks(dep);
                         if (isDuplicate.Item1)
                         {
-                            throw new SyntaxError("Found more than one task with the same name", isDuplicate.Item2);
+                            ErrorReporter.DisplayError(new SyntaxError("Found more than one task with the same name", isDuplicate.Item2));
                         }
 
                         if (!TaskQueueContains(dep))
@@ -93,7 +93,7 @@ namespace Zenith.Executor
             (bool, int) isDuplicate = CheckDuplicateTasks(name);
             if (isDuplicate.Item1)
             {
-                throw new SyntaxError("Found more than one task with the same name", isDuplicate.Item2);
+                ErrorReporter.DisplayError(new SyntaxError("Found more than one task with the same name", isDuplicate.Item2));
             }
 
             for (int i = 0; i < taskfileModel.Tasks.Count; i++)
@@ -104,7 +104,10 @@ namespace Zenith.Executor
                 }
             }
 
-            throw new UserInputError($"No task called {name} was found!");
+            ErrorReporter.DisplayError(new UserInputError($"No task called '{name}' was found!"));
+            
+            // This part is unreachable
+            return 0;
         }
 
         public void PrintQueue()

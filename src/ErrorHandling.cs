@@ -2,7 +2,24 @@ using System;
 
 namespace Zenith.Error
 {
-    // TODO: Refactor error handling to avoid using Exceptions
+    public class ErrorReporter
+    {
+        public static void DisplayError(ZenithException ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+
+            Console.Error.WriteLine("[--- FATAL ZENITH ERROR ---]");
+            Console.Error.WriteLine(ex.Message);
+
+            if (ex is IoError ioe && ioe.InnerException != null)
+            {
+                Console.Error.WriteLine($"Cause: {ioe.InnerException.GetType().Name} Error");
+            }
+
+            Console.ResetColor();
+            Environment.Exit(1);
+        }
+    }
 
     public class ZenithException : Exception
     {

@@ -11,7 +11,7 @@ namespace Zenith.Reader
         {
             if (string.IsNullOrEmpty(path))
             {
-                throw new Internal("No file path was found");
+                ErrorReporter.DisplayError(new Internal("No file path was found"));
             }
 
             try
@@ -34,7 +34,7 @@ namespace Zenith.Reader
             }
             catch (Exception ex)
             {
-                throw new IoError("Error while reading Taskfile", ex);
+                ErrorReporter.DisplayError(new IoError("Error while reading Taskfile", ex));
             }
         }
         

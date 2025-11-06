@@ -18,7 +18,7 @@ namespace Zenith.Tokenization
 
             if (string.IsNullOrEmpty(input))
             {
-                throw new TokenError("EOF reached unexpectedly! Is your Taskfile empty?");
+                ErrorReporter.DisplayError(new TokenError("EOF reached unexpectedly! Is your Taskfile empty?"));
             }
 
             string[] lines = input.Split(new[] { '\n' }, StringSplitOptions.None);
@@ -114,7 +114,7 @@ namespace Zenith.Tokenization
             var m = Regex.Match(trimmedLine, @"^set\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$");
             if (!m.Success)
             {
-                throw new SyntaxError($"Unexpected token {trimmedLine}", lineNumber);
+                ErrorReporter.DisplayError(new SyntaxError($"Unexpected token {trimmedLine}", lineNumber));
             }
 
             string name = m.Groups[1].Value;
@@ -151,7 +151,7 @@ namespace Zenith.Tokenization
 
                 if (string.Equals(after, "null"))
                 {
-                    throw new SyntaxError("Invalid task name 'null'", lineNumber);
+                    ErrorReporter.DisplayError(new SyntaxError("Invalid task name 'null'", lineNumber));
                 }
 
                 _tokens.Add(new Token(TokenType.IDENTIFIER, after, lineNumber));
@@ -163,7 +163,7 @@ namespace Zenith.Tokenization
 
                 if (string.Equals(left, "null"))
                 {
-                    throw new SyntaxError("Invalid task name 'null'", lineNumber);
+                    ErrorReporter.DisplayError(new SyntaxError("Invalid task name 'null'", lineNumber));
                 }
                 
                 _tokens.Add(new Token(TokenType.IDENTIFIER, left, lineNumber));
@@ -189,7 +189,7 @@ namespace Zenith.Tokenization
             }
             else
             {
-                throw new SyntaxError("Dependencies cannot be empty", lineNumber);
+                ErrorReporter.DisplayError(new SyntaxError("Dependencies cannot be empty", lineNumber));
             }
         }
 
