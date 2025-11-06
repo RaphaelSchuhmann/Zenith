@@ -15,7 +15,7 @@ namespace Zenith.Models
             (bool, int) isDuplicate = CheckDuplicateVariables(name);
             if (isDuplicate.Item1)
             {
-                ErrorReporter.DisplayError(new SyntaxError("Found more than one task with the same name", isDuplicate.Item2));
+                ErrorReporter.DisplayError(new SyntaxError("Found more than one variable with the same name", isDuplicate.Item2));
             }
 
             for (int i = 0; i < Variables.Count; i++)

@@ -68,26 +68,19 @@ namespace Zenith.Executor
                     // In theory this will never be true as it should already have checked that before
                     if (commands.Count <= 0) ErrorReporter.DisplayError(new SyntaxError("Invalid task declaration, commands can not be empty", task.LineNumber));
 
-                    string pattern = @"\$\{([A-Za-z]+)\}";
+                    string pattern = @"\$\{([A-Za-z_][A-Za-z0-9_]+)\}";
 
                     List<string> updatedCommands = new();
 
                     foreach (string cmd in commands)
                     {
-                        var variableRegexMatch = Regex.Match(cmd, pattern);
-
-                        if (variableRegexMatch.Success)
+                        string resolveCmd = Regex.Replace(cmd, pattern, match =>
                         {
-                            string varName = variableRegexMatch.Groups[1].Value;
+                            string varName = match.Groups[1].Value;
                             VariableModel variable = Taskfile.Variables[Taskfile.FindVariableModelIndex(varName)];
-
-                            updatedCommands.Add(Regex.Replace(cmd, pattern, variable.Value, RegexOptions.Multiline));
-                        }
-                        else
-                        {
-                            // Still add command to updatedCommands even if it does not contain a variable reference
-                            updatedCommands.Add(cmd);
-                        }
+                            return variable.Value;
+                        });
+                        updatedCommands.Add(resolveCmd);
                     }
 
                     task.Commands = updatedCommands;
