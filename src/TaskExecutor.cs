@@ -1,4 +1,5 @@
 using System;
+using System.Text.RegularExpressions;
 using Zenith.Error;
 using Zenith.Models;
 
@@ -6,9 +7,9 @@ namespace Zenith.Executor
 {
     public class TaskExecutor
     {
-        private readonly Queue<TaskModel> tasksQueue = new Queue<TaskModel>();
-        private readonly HashSet<string> activeTasks = new();
-        public TaskfileModel taskfileModel { get; set; } = new();
+        private readonly Queue<TaskModel> TasksQueue = new Queue<TaskModel>();
+        private readonly HashSet<string> ActiveTasks = new();
+        public TaskfileModel Taskfile { get; set; } = new();
 
         public void ResolveDependencies(string taskName)
         {
@@ -17,9 +18,9 @@ namespace Zenith.Executor
                 ErrorReporter.DisplayError(new UserInputError("Task name cannot be empty!"));
             }
 
-            TaskModel mainTask = taskfileModel.Tasks[FindTaskModelIndex(taskName)];
+            TaskModel mainTask = Taskfile.Tasks[Taskfile.FindTaskModelIndex(taskName)];
 
-            if (!activeTasks.Add(mainTask.Name))
+            if (!ActiveTasks.Add(mainTask.Name))
             {
                 ErrorReporter.DisplayError(new SyntaxError("Infinite loop detected", mainTask.LineNumber));
             }
@@ -32,7 +33,7 @@ namespace Zenith.Executor
                 {
                     foreach (string dep in dependencies)
                     {
-                        (bool, int) isDuplicate = CheckDuplicateTasks(dep);
+                        (bool, int) isDuplicate = Taskfile.CheckDuplicateTasks(dep);
                         if (isDuplicate.Item1)
                         {
                             ErrorReporter.DisplayError(new SyntaxError("Found more than one task with the same name", isDuplicate.Item2));
@@ -47,18 +48,69 @@ namespace Zenith.Executor
 
                 if (!TaskQueueContains(mainTask.Name))
                 {
-                    tasksQueue.Enqueue(mainTask);
+                    TasksQueue.Enqueue(mainTask);
                 }
             }
             finally
             {
-                activeTasks.Remove(mainTask.Name);
+                ActiveTasks.Remove(mainTask.Name);
             }
         }
 
+        public void ResolveVariables()
+        {
+            if (TasksQueue.Count > 0)
+            {
+                foreach (TaskModel task in TasksQueue)
+                {
+                    List<string> commands = task.Commands;
+
+                    // In theory this will never be true as it should already have checked that before
+                    if (commands.Count <= 0) ErrorReporter.DisplayError(new SyntaxError("Invalid task declaration, commands can not be empty", task.LineNumber));
+
+                    string pattern = @"\$\{([A-Za-z]+)\}";
+
+                    List<string> updatedCommands = new();
+
+                    foreach (string cmd in commands)
+                    {
+                        var variableRegexMatch = Regex.Match(cmd, pattern);
+
+                        if (variableRegexMatch.Success)
+                        {
+                            string varName = variableRegexMatch.Groups[1].Value;
+                            VariableModel variable = Taskfile.Variables[Taskfile.FindVariableModelIndex(varName)];
+
+                            updatedCommands.Add(Regex.Replace(cmd, pattern, variable.Value, RegexOptions.Multiline));
+                        }
+                        else
+                        {
+                            // Still add command to updatedCommands even if it does not contain a variable reference
+                            updatedCommands.Add(cmd);
+                        }
+                    }
+
+                    task.Commands = updatedCommands;
+                }
+            }
+        }
+
+        public void PrintQueue()
+        {
+            Console.WriteLine("=====Queue=====");
+            foreach (TaskModel task in TasksQueue)
+            {
+                task.PrintModel();
+            }
+        }
+
+        #region Helpers
+
         private bool TaskQueueContains(string name)
         {
-            foreach (TaskModel task in tasksQueue)
+            if (string.IsNullOrEmpty(name)) return false;
+
+            foreach (TaskModel task in TasksQueue)
             {
                 if (task.Name == name)
                 {
@@ -69,54 +121,6 @@ namespace Zenith.Executor
             return false;
         }
 
-        private (bool, int) CheckDuplicateTasks(string name)
-        {
-            int count = 0;
-
-            foreach (TaskModel task in taskfileModel.Tasks)
-            {
-                if (task.Name == name)
-                {
-                    count++;
-                    if (count > 1)
-                    {
-                        return (true, task.LineNumber);
-                    }
-                }
-            }
-
-            return (false, 0);
-        }
-
-        private int FindTaskModelIndex(string name)
-        {
-            (bool, int) isDuplicate = CheckDuplicateTasks(name);
-            if (isDuplicate.Item1)
-            {
-                ErrorReporter.DisplayError(new SyntaxError("Found more than one task with the same name", isDuplicate.Item2));
-            }
-
-            for (int i = 0; i < taskfileModel.Tasks.Count; i++)
-            {
-                if (taskfileModel.Tasks[i].Name == name)
-                {
-                    return i;
-                }
-            }
-
-            ErrorReporter.DisplayError(new UserInputError($"No task called '{name}' was found!"));
-            
-            // This part is unreachable
-            return 0;
-        }
-
-        public void PrintQueue()
-        {
-            Console.WriteLine("=====Queue=====");
-            foreach (TaskModel task in tasksQueue)
-            {
-                task.PrintModel();
-            }
-        }
+        #endregion
     }
 }
