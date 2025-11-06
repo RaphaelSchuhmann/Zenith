@@ -1,4 +1,6 @@
 using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Zenith.Error;
 using Zenith.Models;
@@ -10,6 +12,94 @@ namespace Zenith.Executor
         private readonly Queue<TaskModel> TasksQueue = new Queue<TaskModel>();
         private readonly HashSet<string> ActiveTasks = new();
         public TaskfileModel Taskfile { get; set; } = new();
+
+        public void ExecuteTasks()
+        {
+            if (TasksQueue.Count > 0)
+            {
+                foreach (TaskModel task in TasksQueue)
+                {
+                    Console.WriteLine($"Task: {task.Name}");
+                    List<string> commands = task.Commands;
+
+                    foreach (string cmd in commands)
+                    {
+                        ExecuteCommand(cmd);
+                    }
+                }
+            }
+        }
+
+        // ! This function is unable to execute a command like ./bin/main.exe
+        public void ExecuteCommand(string cmd)
+        {
+            string shell;
+            string argumentPrefix;
+            string commandToExecute = cmd;
+
+            string workingDirectory = Directory.GetCurrentDirectory();
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                shell = "cmd.exe";
+                argumentPrefix = "/C";
+            }
+            else
+            {
+                shell = "/bin/bash";
+                argumentPrefix = "-c";
+            }
+
+            string finalArguments = $"{argumentPrefix}\"{commandToExecute}\"";
+
+            try
+            {
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = shell,
+                    Arguments = finalArguments,
+
+                    WorkingDirectory = workingDirectory,
+
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false, // Must be false when RedirectStandard* is true
+                    CreateNoWindow = true,
+                };
+
+                using (Process? process = Process.Start(startInfo))
+                {
+                    if (process == null)
+                    {
+                        ErrorReporter.DisplayError(new Internal($"Could not start shell process: {shell}"));
+                    }
+                    else
+                    {
+                        process.WaitForExit();
+
+                        string output = process.StandardOutput.ReadToEnd();
+                        string error = process.StandardError.ReadToEnd();
+                        int exitCode = process.ExitCode;
+
+                        if (exitCode != 0)
+                        {
+                            ErrorReporter.DisplayError(new CommandError($"Command '{cmd}' failed with exit code {exitCode}. Error output: {error}"));
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(output))
+                        {
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Console.WriteLine($"Command '{cmd}' finished successfully");
+                            Console.ResetColor();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorReporter.DisplayError(new Internal($"Critical system error while attempting to run shell '{shell}': {ex.Message}"));
+            }
+        }
 
         public void ResolveDependencies(string taskName)
         {

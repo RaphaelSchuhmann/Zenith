@@ -27,7 +27,7 @@ namespace Zenith
             exec.Taskfile = taskfileModel;
             exec.ResolveDependencies("run");
             exec.ResolveVariables();
-            exec.PrintQueue();
+            exec.ExecuteTasks();
         }
     }
 }
