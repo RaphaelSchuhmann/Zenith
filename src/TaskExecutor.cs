@@ -6,7 +6,8 @@ namespace Zenith.Executor
 {
     public class TaskExecutor
     {
-        private Queue<TaskModel> tasksQueue = new Queue<TaskModel>();
+        private readonly Queue<TaskModel> tasksQueue = new Queue<TaskModel>();
+        private readonly HashSet<string> activeTasks = new();
         public TaskfileModel taskfileModel { get; set; } = new();
 
         public void ResolveDependencies(string taskName)
@@ -17,29 +18,41 @@ namespace Zenith.Executor
             }
 
             TaskModel mainTask = taskfileModel.Tasks[FindTaskModelIndex(taskName)];
-            tasksQueue.Enqueue(mainTask);
 
-            List<string> dependencies = mainTask.Dependencies;
-
-            if (!string.Equals(dependencies[0], "null"))
+            if (!activeTasks.Add(mainTask.Name))
             {
-                foreach (string dep in dependencies)
-                {
-                    (bool, int) isDuplicate = CheckDuplicateTasks(dep);
-                    if (isDuplicate.Item1)
-                    {
-                        throw new SyntaxError("Found more than one task with the same name", isDuplicate.Item2);
-                    }
+                throw new SyntaxError("Infinite loop detected", mainTask.LineNumber);
+            }
 
-                    if (!TaskQueueContains(dep))
+            try
+            {
+                List<string> dependencies = mainTask.Dependencies;
+
+                if (dependencies.Count > 0 && !string.Equals(dependencies[0], "null"))
+                {
+                    foreach (string dep in dependencies)
                     {
-                        ResolveDependencies(dep);
-                    }
-                    else
-                    {
-                        throw new SyntaxError("Infinite loop detected", mainTask.LineNumber);
+                        (bool, int) isDuplicate = CheckDuplicateTasks(dep);
+                        if (isDuplicate.Item1)
+                        {
+                            throw new SyntaxError("Found more than one task with the same name", isDuplicate.Item2);
+                        }
+
+                        if (!TaskQueueContains(dep))
+                        {
+                            ResolveDependencies(dep);
+                        }
                     }
                 }
+
+                if (!TaskQueueContains(mainTask.Name))
+                {
+                    tasksQueue.Enqueue(mainTask);
+                }
+            }
+            finally
+            {
+                activeTasks.Remove(mainTask.Name);
             }
         }
 
@@ -52,7 +65,7 @@ namespace Zenith.Executor
                     return true;
                 }
             }
-            
+
             return false;
         }
 
@@ -62,11 +75,13 @@ namespace Zenith.Executor
 
             foreach (TaskModel task in taskfileModel.Tasks)
             {
-                if (count > 1) return (true, task.LineNumber);
-
                 if (task.Name == name)
                 {
                     count++;
+                    if (count > 1)
+                    {
+                        return (true, task.LineNumber);
+                    }
                 }
             }
 

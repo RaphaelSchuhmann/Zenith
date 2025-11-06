@@ -149,7 +149,7 @@ namespace Zenith.Tokenization
                 _tokens.Add(new Token(TokenType.KEYWORD_TASK, "task", lineNumber, TokenType.KEYWORD));
                 string after = left.Substring("task ".Length).Trim();
 
-                if (string.Equals(left, "null"))
+                if (string.Equals(after, "null"))
                 {
                     throw new SyntaxError("Invalid task name 'null'", lineNumber);
                 }
