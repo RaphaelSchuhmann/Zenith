@@ -5,8 +5,6 @@ using Zenith.Parse;
 using Zenith.Reader;
 using Zenith.Tokenization;
 
-// TODO: Fix line numbering: It currently is not counting comments and empty lines into the line numbering
-
 namespace Zenith
 {
     internal class Program
