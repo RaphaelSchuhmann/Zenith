@@ -24,8 +24,9 @@ namespace Zenith
             TaskfileModel taskfileModel = parser.Parse(tokens);
 
             TaskExecutor exec = new TaskExecutor();
-            exec.taskfileModel = taskfileModel;
+            exec.Taskfile = taskfileModel;
             exec.ResolveDependencies("run");
+            exec.ResolveVariables();
             exec.PrintQueue();
         }
     }
