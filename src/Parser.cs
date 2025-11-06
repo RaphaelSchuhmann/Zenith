@@ -144,7 +144,7 @@ namespace Zenith.Parse
             int commandsEnd = indexesNewLine.Count > 1 ? indexesNewLine[1] : tokenGroup.Group.Count;
             if (commandsStart >= commandsEnd)
             {
-                throw new SyntaxError("Invalid task declaration, commands can not be empty!", task.LineNumber);
+                throw new SyntaxError("Invalid task declaration, commands can not be empty", task.LineNumber);
             }
             List<Token> commands = tokenGroup.Group[commandsStart..commandsEnd];
             foreach (Token cmd in commands)
@@ -155,7 +155,7 @@ namespace Zenith.Parse
                 }
                 else
                 {
-                    throw new SyntaxError("Invalid task declaration, commands can not be empty!", task.LineNumber);
+                    throw new SyntaxError("Invalid task declaration, commands can not be empty", task.LineNumber);
                 }
             }
 
