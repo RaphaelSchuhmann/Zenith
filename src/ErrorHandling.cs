@@ -2,6 +2,8 @@ using System;
 
 namespace Zenith.Error
 {
+    // TODO: Refactor error handling to avoid using Exceptions
+
     public class ZenithException : Exception
     {
         public int Line { get; }
@@ -36,6 +38,11 @@ namespace Zenith.Error
     public sealed class IoError : ZenithException
     {
         public IoError(string message, Exception inner) : base(message, inner) { }
+    }
+
+    public sealed class UserInputError : ZenithException
+    {
+        public UserInputError(string message) : base($"Invalid input: {message}") { }
     }
 
     public sealed class Internal : ZenithException

@@ -1,8 +1,11 @@
 ﻿using System;
+using Zenith.Executor;
 using Zenith.Models;
 using Zenith.Parse;
 using Zenith.Reader;
 using Zenith.Tokenization;
+
+// TODO: Fix line numbering: It currently is not counting comments and empty lines into the line numbering
 
 namespace Zenith
 {
@@ -21,6 +24,11 @@ namespace Zenith
             // Console.WriteLine("-----Parser Output-----");
             Parser parser = new Parser();
             TaskfileModel taskfileModel = parser.Parse(tokens);
+
+            TaskExecutor exec = new TaskExecutor();
+            exec.taskfileModel = taskfileModel;
+            exec.ResolveDependencies("run");
+            exec.PrintQueue();
         }
     }
 }

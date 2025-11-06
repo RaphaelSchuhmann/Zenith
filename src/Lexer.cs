@@ -148,12 +148,24 @@ namespace Zenith.Tokenization
             {
                 _tokens.Add(new Token(TokenType.KEYWORD_TASK, "task", lineNumber, TokenType.KEYWORD));
                 string after = left.Substring("task ".Length).Trim();
+
+                if (string.Equals(left, "null"))
+                {
+                    throw new SyntaxError("Invalid task name 'null'", lineNumber);
+                }
+
                 _tokens.Add(new Token(TokenType.IDENTIFIER, after, lineNumber));
             }
             else
             {
                 // treated left as task name
                 _tokens.Add(new Token(TokenType.KEYWORD_TASK, "task", lineNumber, TokenType.KEYWORD));
+
+                if (string.Equals(left, "null"))
+                {
+                    throw new SyntaxError("Invalid task name 'null'", lineNumber);
+                }
+                
                 _tokens.Add(new Token(TokenType.IDENTIFIER, left, lineNumber));
             }
 
@@ -174,6 +186,10 @@ namespace Zenith.Tokenization
                     _tokens.Add(new Token(TokenType.DEPENDENCY, dep, lineNumber));
                     first = false;
                 }
+            }
+            else
+            {
+                throw new SyntaxError("Dependencies cannot be empty", lineNumber);
             }
         }
 
