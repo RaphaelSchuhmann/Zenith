@@ -30,14 +30,102 @@ namespace Zenith.Executor
             }
         }
 
-        // ! This function is unable to execute a command like ./bin/main.exe
         public void ExecuteCommand(string cmd)
+        {
+            try
+            {
+                bool shouldOpenInTerminal = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && cmd.StartsWith(".\\")) || cmd.StartsWith("./");
+
+                if (shouldOpenInTerminal)
+                {
+                    LaunchInNewTerminal(cmd);
+                }
+                else
+                {
+                    RunHeadless(cmd);
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorReporter.DisplayError(new Internal($"Critical system error while executing command '{cmd}': {ex.Message}"));
+            }
+        }
+
+        private void LaunchInNewTerminal(string cmd)
+        {
+            ProcessStartInfo startInfo;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // Normalize path for Windows
+                if (cmd.StartsWith("./")) cmd = ".\\" + cmd.Substring(2);
+                cmd = cmd.Replace("/", "\\");
+
+                startInfo = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/k \"{cmd}\"", // Keep terminal open until user closes
+                    UseShellExecute = true,
+                    CreateNoWindow = false,
+                    WorkingDirectory = Directory.GetCurrentDirectory()
+                };
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                startInfo = new ProcessStartInfo
+                {
+                    FileName = "gnome-terminal", // You can add fallback to xterm/konsole
+                    Arguments = $"-- bash -c '{cmd}; exec bash'",
+                    UseShellExecute = true,
+                    CreateNoWindow = false,
+                    WorkingDirectory = Directory.GetCurrentDirectory()
+                };
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                startInfo = new ProcessStartInfo
+                {
+                    FileName = "osascript",
+                    Arguments = $"-e 'tell application \"Terminal\" to do script \"{cmd}\"'",
+                    UseShellExecute = true,
+                    CreateNoWindow = false
+                };
+            }
+            else
+            {
+                ErrorReporter.DisplayError(new Internal("Unsupported platform for executing commands"));
+                return;
+            }
+
+            using (var process = Process.Start(startInfo))
+            {
+                if (process != null)
+                {
+                    process.WaitForExit(); // Wait until user closes the terminal
+                    int exitCode = process.ExitCode;
+
+                    if (exitCode != 0 && !(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && exitCode == unchecked((int)0xC000013A)))
+                    {
+                        ErrorReporter.DisplayError(new CommandError($"Command '{cmd}' failed with exit code {exitCode}."));
+                    }
+                    else
+                    {
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine($"Command '{cmd}' finished (terminal closed by user).");
+                        Console.ResetColor();
+                    }
+                }
+                else
+                {
+                    ErrorReporter.DisplayError(new Internal($"Could not start new terminal for command: {cmd}"));
+                }
+            }
+        }
+
+        private void RunHeadless(string cmd)
         {
             string shell;
             string argumentPrefix;
-            string commandToExecute = cmd;
-
-            string workingDirectory = Directory.GetCurrentDirectory();
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -50,54 +138,53 @@ namespace Zenith.Executor
                 argumentPrefix = "-c";
             }
 
-            string finalArguments = $"{argumentPrefix}\"{commandToExecute}\"";
+            string finalArgs = $"{argumentPrefix} \"{cmd}\"";
 
-            try
+            var startInfo = new ProcessStartInfo
             {
-                var startInfo = new ProcessStartInfo
+                FileName = shell,
+                Arguments = finalArgs,
+                WorkingDirectory = Directory.GetCurrentDirectory(),
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using (var process = Process.Start(startInfo))
+            {
+                if (process == null)
                 {
-                    FileName = shell,
-                    Arguments = finalArguments,
-
-                    WorkingDirectory = workingDirectory,
-
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false, // Must be false when RedirectStandard* is true
-                    CreateNoWindow = true,
-                };
-
-                using (Process? process = Process.Start(startInfo))
-                {
-                    if (process == null)
-                    {
-                        ErrorReporter.DisplayError(new Internal($"Could not start shell process: {shell}"));
-                    }
-                    else
-                    {
-                        process.WaitForExit();
-
-                        string output = process.StandardOutput.ReadToEnd();
-                        string error = process.StandardError.ReadToEnd();
-                        int exitCode = process.ExitCode;
-
-                        if (exitCode != 0)
-                        {
-                            ErrorReporter.DisplayError(new CommandError($"Command '{cmd}' failed with exit code {exitCode}. Error output: {error}"));
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(output))
-                        {
-                            Console.ForegroundColor = ConsoleColor.Green;
-                            Console.WriteLine($"Command '{cmd}' finished successfully");
-                            Console.ResetColor();
-                        }
-                    }
+                    ErrorReporter.DisplayError(new Internal($"Could not start shell process: {shell}"));
+                    return;
                 }
-            }
-            catch (Exception ex)
-            {
-                ErrorReporter.DisplayError(new Internal($"Critical system error while attempting to run shell '{shell}': {ex.Message}"));
+
+                string output = process.StandardOutput.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
+                process.WaitForExit();
+
+                int exitCode = process.ExitCode;
+
+                if (!string.IsNullOrWhiteSpace(output))
+                    Console.WriteLine(output);
+
+                if (!string.IsNullOrWhiteSpace(error))
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine(error);
+                    Console.ResetColor();
+                }
+
+                if (exitCode != 0)
+                {
+                    ErrorReporter.DisplayError(new CommandError($"Command '{cmd}' failed with exit code {exitCode}."));
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"Command '{cmd}' finished successfully");
+                    Console.ResetColor();
+                }
             }
         }
 
