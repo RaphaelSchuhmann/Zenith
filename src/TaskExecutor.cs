@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Zenith.Error;
 using Zenith.Models;
+using Zenith.Display;
 
 namespace Zenith.Executor
 {
@@ -19,7 +20,7 @@ namespace Zenith.Executor
             {
                 foreach (TaskModel task in TasksQueue)
                 {
-                    Console.WriteLine($"Task: {task.Name}");
+                    Output.DisplayInfo($"Task: {task.Name}");
                     List<string> commands = task.Commands;
 
                     foreach (string cmd in commands)
@@ -47,7 +48,7 @@ namespace Zenith.Executor
             }
             catch (Exception ex)
             {
-                ErrorReporter.DisplayError(new Internal($"Critical system error while executing command '{cmd}': {ex.Message}"));
+                Output.DisplayError(new Internal($"Critical system error while executing command '{cmd}': {ex.Message}"));
             }
         }
 
@@ -93,7 +94,7 @@ namespace Zenith.Executor
             }
             else
             {
-                ErrorReporter.DisplayError(new Internal("Unsupported platform for executing commands"));
+                Output.DisplayError(new Internal("Unsupported platform for executing commands"));
                 return;
             }
 
@@ -106,18 +107,16 @@ namespace Zenith.Executor
 
                     if (exitCode != 0 && !(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && exitCode == unchecked((int)0xC000013A)))
                     {
-                        ErrorReporter.DisplayError(new CommandError($"Command '{cmd}' failed with exit code {exitCode}."));
+                        Output.DisplayError(new CommandError($"Command '{cmd}' failed with exit code {exitCode}."));
                     }
                     else
                     {
-                        Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"Command '{cmd}' finished (terminal closed by user).");
-                        Console.ResetColor();
+                        Output.DisplaySuccess($"Command '{cmd}' finished (terminal closed by user).");
                     }
                 }
                 else
                 {
-                    ErrorReporter.DisplayError(new Internal($"Could not start new terminal for command: {cmd}"));
+                    Output.DisplayError(new Internal($"Could not start new terminal for command: {cmd}"));
                 }
             }
         }
@@ -155,8 +154,8 @@ namespace Zenith.Executor
             {
                 if (process == null)
                 {
-                    ErrorReporter.DisplayError(new Internal($"Could not start shell process: {shell}"));
-                    return;
+                    Output.DisplayError(new Internal($"Could not start shell process: {shell}"));
+                    return; // Unreachable but needed to silence compiler
                 }
 
                 process.WaitForExit();
@@ -169,22 +168,13 @@ namespace Zenith.Executor
                 if (!string.IsNullOrWhiteSpace(output))
                     Console.WriteLine(output);
 
-                if (!string.IsNullOrWhiteSpace(error))
-                {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine(error);
-                    Console.ResetColor();
-                }
-
                 if (exitCode != 0)
                 {
-                    ErrorReporter.DisplayError(new CommandError($"Command '{cmd}' failed with exit code {exitCode}."));
+                    Output.DisplayError(new CommandError($"Command '{cmd}' failed with exit code {exitCode}.\nError output: {error}"));
                 }
                 else
                 {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine($"Command '{cmd}' finished successfully");
-                    Console.ResetColor();
+                    Output.DisplaySuccess($"Command '{cmd}' finished successfully.");
                 }
             }
         }
@@ -193,14 +183,14 @@ namespace Zenith.Executor
         {
             if (string.IsNullOrEmpty(taskName))
             {
-                ErrorReporter.DisplayError(new UserInputError("Task name cannot be empty!"));
+                Output.DisplayError(new UserInputError("Task name cannot be empty!"));
             }
 
             TaskModel mainTask = Taskfile.Tasks[Taskfile.FindTaskModelIndex(taskName)];
 
             if (!ActiveTasks.Add(mainTask.Name))
             {
-                ErrorReporter.DisplayError(new SyntaxError("Infinite loop detected", mainTask.LineNumber));
+                Output.DisplayError(new SyntaxError("Infinite loop detected", mainTask.LineNumber));
             }
 
             try
@@ -214,7 +204,7 @@ namespace Zenith.Executor
                         (bool, int) isDuplicate = Taskfile.CheckDuplicateTasks(dep);
                         if (isDuplicate.Item1)
                         {
-                            ErrorReporter.DisplayError(new SyntaxError("Found more than one task with the same name", isDuplicate.Item2));
+                            Output.DisplayError(new SyntaxError("Found more than one task with the same name", isDuplicate.Item2));
                         }
 
                         if (!TaskQueueContains(dep))
@@ -244,7 +234,7 @@ namespace Zenith.Executor
                     List<string> commands = task.Commands;
 
                     // In theory this will never be true as it should already have checked that before
-                    if (commands.Count <= 0) ErrorReporter.DisplayError(new SyntaxError("Invalid task declaration, commands can not be empty", task.LineNumber));
+                    if (commands.Count <= 0) Output.DisplayError(new SyntaxError("Invalid task declaration, commands can not be empty", task.LineNumber));
 
                     string pattern = @"\$\{([A-Za-z_][A-Za-z0-9_]+)\}";
 
@@ -268,7 +258,7 @@ namespace Zenith.Executor
 
         public void PrintQueue()
         {
-            Console.WriteLine("=====Queue=====");
+            Output.DisplayDebug("===== Queue =====");
             foreach (TaskModel task in TasksQueue)
             {
                 task.PrintModel();

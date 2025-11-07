@@ -1,5 +1,6 @@
 using System;
 using System.Text.RegularExpressions;
+using Zenith.Display;
 using Zenith.Error;
 
 namespace Zenith.Tokenization
@@ -18,7 +19,7 @@ namespace Zenith.Tokenization
 
             if (string.IsNullOrEmpty(input))
             {
-                ErrorReporter.DisplayError(new TokenError("EOF reached unexpectedly! Is your Taskfile empty?"));
+                Output.DisplayError(new TokenError("EOF reached unexpectedly! Is your Taskfile empty?"));
             }
 
             string[] lines = input.Split(new[] { '\n' }, StringSplitOptions.None);
@@ -118,7 +119,7 @@ namespace Zenith.Tokenization
             var m = Regex.Match(trimmedLine, @"^set\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$");
             if (!m.Success)
             {
-                ErrorReporter.DisplayError(new SyntaxError($"Unexpected token {trimmedLine}", lineNumber));
+                Output.DisplayError(new SyntaxError($"Unexpected token {trimmedLine}", lineNumber));
             }
 
             string name = m.Groups[1].Value;
@@ -155,7 +156,7 @@ namespace Zenith.Tokenization
 
                 if (string.Equals(after, "null"))
                 {
-                    ErrorReporter.DisplayError(new SyntaxError("Invalid task name 'null'", lineNumber));
+                    Output.DisplayError(new SyntaxError("Invalid task name 'null'", lineNumber));
                 }
 
                 _tokens.Add(new Token(TokenType.IDENTIFIER, after, lineNumber));
@@ -167,7 +168,7 @@ namespace Zenith.Tokenization
 
                 if (string.Equals(left, "null"))
                 {
-                    ErrorReporter.DisplayError(new SyntaxError("Invalid task name 'null'", lineNumber));
+                    Output.DisplayError(new SyntaxError("Invalid task name 'null'", lineNumber));
                 }
 
                 _tokens.Add(new Token(TokenType.IDENTIFIER, left, lineNumber));
@@ -193,7 +194,7 @@ namespace Zenith.Tokenization
             }
             else
             {
-                ErrorReporter.DisplayError(new SyntaxError("Dependencies cannot be empty", lineNumber));
+                Output.DisplayError(new SyntaxError("Dependencies cannot be empty", lineNumber));
             }
         }
 
@@ -237,6 +238,7 @@ namespace Zenith.Tokenization
 
         public void PrintTokens(List<Token> tokens)
         {
+            Output.DisplayDebug("===== Tokens =====");
             foreach (Token token in tokens)
             {
                 token.PrintToken();
@@ -261,11 +263,11 @@ namespace Zenith.Tokenization
 
         public void PrintToken()
         {
-            Console.WriteLine($"Type: {Type}");
-            Console.WriteLine($"Value: {Value}");
-            Console.WriteLine($"Line: {LineNumber}");
-            Console.WriteLine($"General Type: {GeneralType}");
-            Console.WriteLine("---------------------------");
+            Output.DisplayDebug($"Type: {Type}");
+            Output.DisplayDebug($"Value: {Value}");
+            Output.DisplayDebug($"Line: {LineNumber}");
+            Output.DisplayDebug($"General Type: {GeneralType}");
+            Output.DisplayDebug("==================");
         }
     }
 

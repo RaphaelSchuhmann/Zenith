@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Zenith.Display;
 using Zenith.Error;
 
 namespace Zenith.Reader
@@ -11,7 +12,7 @@ namespace Zenith.Reader
         {
             if (string.IsNullOrEmpty(path))
             {
-                ErrorReporter.DisplayError(new Internal("No file path was found"));
+                Output.DisplayError(new Internal("No file path was found"));
             }
 
             try
@@ -31,10 +32,10 @@ namespace Zenith.Reader
             }
             catch (Exception ex)
             {
-                ErrorReporter.DisplayError(new IoError("Error while reading Taskfile", ex));
+                Output.DisplayError(new IoError("Error while reading Taskfile", ex));
             }
         }
-        
+
         private static string StripInlineComment(string line)
         {
             bool inDoubleQuotes = false;
@@ -64,7 +65,12 @@ namespace Zenith.Reader
         // DEBUG:
         public void PrintContent()
         {
-            Console.WriteLine(FileContent);
+            string[] lines = FileContent.Split(new[] { '\n' }, StringSplitOptions.None);
+
+            foreach (string line in lines)
+            {
+                Output.DisplayDebug(line);
+            }
         }
     }
 }

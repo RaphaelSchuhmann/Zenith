@@ -1,4 +1,5 @@
 using System;
+using Zenith.Display;
 using Zenith.Error;
 using Zenith.Models;
 using Zenith.Tokenization;
@@ -14,7 +15,7 @@ namespace Zenith.Parse
             // Check if list is empty
             if (!tokens.Any())
             {
-                ErrorReporter.DisplayError(new Internal("Parser encountered an empty list of tokens!"));
+                Output.DisplayError(new Internal("Parser encountered an empty list of tokens!"));
             }
 
             // Group tokens
@@ -42,7 +43,7 @@ namespace Zenith.Parse
             }
             catch (ArgumentOutOfRangeException ex)
             {
-                ErrorReporter.DisplayError(new Internal($"Invalid operation in parser: {ex.Message}"));
+                Output.DisplayError(new Internal($"Invalid operation in parser: {ex.Message}"));
             }
 
             foreach (TokenGroup group in tokenGroups)
@@ -57,7 +58,7 @@ namespace Zenith.Parse
                 }
                 else
                 {
-                    ErrorReporter.DisplayError(new SyntaxError($"Unexpected token {group.Group[0].Value}", group.Group[0].LineNumber));
+                    Output.DisplayError(new SyntaxError($"Unexpected token {group.Group[0].Value}", group.Group[0].LineNumber));
                 }
             }
 
@@ -99,7 +100,7 @@ namespace Zenith.Parse
             if (tokenGroup.Group.Count <= 1)
             {
                 // Note that tokenGroup here can never be empty since there has to be at least one token to call this function
-                ErrorReporter.DisplayError(new SyntaxError("Incomplete variable declaration", tokenGroup.Group[0].LineNumber));
+                Output.DisplayError(new SyntaxError("Incomplete variable declaration", tokenGroup.Group[0].LineNumber));
             }
 
             variable.Name = tokenGroup.Group[1].Value;
@@ -116,7 +117,7 @@ namespace Zenith.Parse
             if (tokenGroup.Group.Count <= 1)
             {
                 // Note that tokenGroup here can never be empty since there has to be at least one token to call this function
-                ErrorReporter.DisplayError(new SyntaxError("Incomplete task declaration", tokenGroup.Group[0].LineNumber));
+                Output.DisplayError(new SyntaxError("Incomplete task declaration", tokenGroup.Group[0].LineNumber));
             }
 
             task.Name = tokenGroup.Group[1].Value;
@@ -135,7 +136,7 @@ namespace Zenith.Parse
                     }
                     else
                     {
-                        ErrorReporter.DisplayError(new SyntaxError("Invalid task declaration, dependencies can not be empty!\nUse 'null' if you don't want any dependencies", task.LineNumber));
+                        Output.DisplayError(new SyntaxError("Invalid task declaration, dependencies can not be empty!\nUse 'null' if you don't want any dependencies", task.LineNumber));
                     }
                 }
             }
@@ -144,7 +145,7 @@ namespace Zenith.Parse
             int commandsEnd = indexesNewLine.Count > 1 ? indexesNewLine[1] : tokenGroup.Group.Count;
             if (commandsStart >= commandsEnd)
             {
-                ErrorReporter.DisplayError(new SyntaxError("Invalid task declaration, commands can not be empty", task.LineNumber));
+                Output.DisplayError(new SyntaxError("Invalid task declaration, commands can not be empty", task.LineNumber));
             }
             List<Token> commands = tokenGroup.Group[commandsStart..commandsEnd];
             foreach (Token cmd in commands)
@@ -155,7 +156,7 @@ namespace Zenith.Parse
                 }
                 else
                 {
-                    ErrorReporter.DisplayError(new SyntaxError("Invalid task declaration, commands can not be empty", task.LineNumber));
+                    Output.DisplayError(new SyntaxError("Invalid task declaration, commands can not be empty", task.LineNumber));
                 }
             }
 
@@ -178,10 +179,9 @@ namespace Zenith.Parse
 
         public void PrintGroup()
         {
-            Console.WriteLine("-----Printing Group-----");
-            Console.WriteLine($"Type: {Type}");
-            Console.WriteLine("Tokens: ");
-            Console.WriteLine("---");
+            Output.DisplayDebug("===== Printing Group =====");
+            Output.DisplayDebug($"Type: {Type}");
+            Output.DisplayDebug("Tokens: ");
             foreach (Token token in Group)
             {
                 token.PrintToken();
