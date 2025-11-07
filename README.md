@@ -52,17 +52,15 @@ task all: clean, build, test
 ### CLI Usage
 
 ```bash
-task <taskname>         Execute the named task and its dependencies
 task run <taskname>     Alias for above
-task --list             List all available task and dependencies
+task list               List all available task and dependencies
 task --dry-run <task>   Print what would be executed without running
-task --verbose          Show detailed execution info
 task --help             Show usage information
 task --version          Display version and environment details
 ```
 Example:
 ```bash
-task all
+task run all
 ```
 
 ---
