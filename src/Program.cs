@@ -1,33 +1,59 @@
 ﻿using System;
-using Zenith.Executor;
-using Zenith.Models;
-using Zenith.Parse;
-using Zenith.Reader;
-using Zenith.Tokenization;
+using System.CommandLine;
+using Zenith.CLI;
+using Zenith.Display;
+using Zenith.Error;
 
 namespace Zenith
 {
     internal class Program
     {
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
-            TaskfileReader reader = new TaskfileReader();
-            reader.ReadFile("./Taskfile.txt");
-            // reader.PrintContent();
-            
-            Lexer lexer = new Lexer();
-            List<Token> tokens = lexer.Tokenize(reader.FileContent);
-            // lexer.PrintTokens(tokens);
+            ZenithProgram zenith = new ZenithProgram();
 
-            Parser parser = new Parser();
-            TaskfileModel taskfileModel = parser.Parse(tokens);
+            RootCommand rootCommand = new("An app for automating tasks");
 
-            TaskExecutor exec = new TaskExecutor();
-            exec.Taskfile = taskfileModel;
-            exec.ResolveDependencies("run");
-            exec.ResolveVariables();
-            // exec.PrintQueue();
-            // exec.ExecuteTasks();
+            Command runCommand = new("run", "Executes a given task");
+            Argument<string> runArg = new Argument<string>("taskName") { Arity = ArgumentArity.ExactlyOne };
+
+            runCommand.Arguments.Add(runArg);
+
+            runCommand.SetAction(parseResult =>
+            {
+                string? taskName = parseResult.GetValue(runArg);
+                if (string.IsNullOrEmpty(taskName))
+                {
+                    Output.DisplayError(new UserInputError("Task name cannot be empty"));
+                    return 1;
+                }
+
+                zenith.RunTask(taskName);
+                return 0;
+            });
+
+            Command listCommand = new("list", "Displays all commands in Taskfile.txt");
+
+            listCommand.SetAction(parseResult =>
+            {
+                zenith.ListTasks();
+                return 0;
+            });
+
+            Command versionCommand = new("--v", "Displays the currently installed version of Zenith and .NET");
+
+            versionCommand.SetAction(parseResult =>
+            {
+                zenith.PrintVersion();
+                return 0;
+            });
+
+            rootCommand.Subcommands.Add(runCommand);
+            rootCommand.Subcommands.Add(listCommand);
+            rootCommand.Subcommands.Add(versionCommand);
+
+            ParseResult parseResult = rootCommand.Parse(args);
+            return parseResult.Invoke();
         }
     }
 }
