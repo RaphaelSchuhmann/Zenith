@@ -12,9 +12,9 @@ namespace Zenith.CLI
 {
     public class ZenithProgram
     {
-        private string CurrentDirectory { get; set; } = Directory.GetCurrentDirectory() + "\\Taskfile.txt";
+        private string CurrentDirectory { get; set; } = Path.Combine(Directory.GetCurrentDirectory(), "Taskfile.txt");
 
-        public void RunTask(string taskName)
+        private TaskfileModel LoadTaskFile()
         {
             TaskfileReader reader = new TaskfileReader();
             reader.ReadFile(CurrentDirectory);
@@ -23,7 +23,12 @@ namespace Zenith.CLI
             List<Token> tokens = lexer.Tokenize(reader.FileContent);
 
             Parser parser = new Parser();
-            TaskfileModel taskfileModel = parser.Parse(tokens);
+            return parser.Parse(tokens);
+        }
+
+        public void RunTask(string taskName)
+        {
+            TaskfileModel taskfileModel = LoadTaskFile();
 
             TaskExecutor exec = new TaskExecutor();
             exec.Taskfile = taskfileModel;
@@ -34,14 +39,7 @@ namespace Zenith.CLI
 
         public void ListTasks()
         {
-            TaskfileReader reader = new TaskfileReader();
-            reader.ReadFile(CurrentDirectory);
-
-            Lexer lexer = new Lexer();
-            List<Token> tokens = lexer.Tokenize(reader.FileContent);
-
-            Parser parser = new Parser();
-            TaskfileModel taskfileModel = parser.Parse(tokens);
+            TaskfileModel taskfileModel = LoadTaskFile();
 
             List<TaskModel> tasks = taskfileModel.Tasks;
 
