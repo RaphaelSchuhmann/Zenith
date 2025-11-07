@@ -7,9 +7,8 @@ namespace Zenith.Error
         public static void DisplayError(ZenithException ex)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-
-            Console.Error.WriteLine("[--- FATAL ZENITH ERROR ---]");
-            Console.Error.WriteLine(ex.Message);
+            
+            Console.Error.Write($"{ex.Message}\n");
 
             if (ex is IoError ioe && ioe.InnerException != null)
             {

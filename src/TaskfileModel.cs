@@ -1,5 +1,6 @@
 using System;
 using Zenith.Error;
+using Zenith.Display;
 
 namespace Zenith.Models
 {
@@ -10,12 +11,12 @@ namespace Zenith.Models
 
         public int FindVariableModelIndex(string name)
         {
-            if (string.IsNullOrEmpty(name)) ErrorReporter.DisplayError(new Internal("Variable name cannot be empty!"));
+            if (string.IsNullOrEmpty(name)) Output.DisplayError(new Internal("Variable name cannot be empty!"));
 
             (bool, int) isDuplicate = CheckDuplicateVariables(name);
             if (isDuplicate.Item1)
             {
-                ErrorReporter.DisplayError(new SyntaxError("Found more than one variable with the same name", isDuplicate.Item2));
+                Output.DisplayError(new SyntaxError("Found more than one variable with the same name", isDuplicate.Item2));
             }
 
             for (int i = 0; i < Variables.Count; i++)
@@ -26,7 +27,7 @@ namespace Zenith.Models
                 }
             }
 
-            ErrorReporter.DisplayError(new UserInputError($"No variable called '{name}' was found!"));
+            Output.DisplayError(new UserInputError($"No variable called '{name}' was found!"));
 
             // This part is unreachable
             return 0;
@@ -34,7 +35,7 @@ namespace Zenith.Models
 
         public (bool, int) CheckDuplicateVariables(string name)
         {
-            if (string.IsNullOrEmpty(name)) ErrorReporter.DisplayError(new Internal("Variable name cannot be empty!"));
+            if (string.IsNullOrEmpty(name)) Output.DisplayError(new Internal("Variable name cannot be empty!"));
 
             int count = 0;
 
@@ -55,7 +56,7 @@ namespace Zenith.Models
 
         public (bool, int) CheckDuplicateTasks(string name)
         {
-            if (string.IsNullOrEmpty(name)) ErrorReporter.DisplayError(new Internal("Task name cannot be empty!"));
+            if (string.IsNullOrEmpty(name)) Output.DisplayError(new Internal("Task name cannot be empty!"));
 
             int count = 0;
 
@@ -79,7 +80,7 @@ namespace Zenith.Models
             (bool, int) isDuplicate = CheckDuplicateTasks(name);
             if (isDuplicate.Item1)
             {
-                ErrorReporter.DisplayError(new SyntaxError("Found more than one task with the same name", isDuplicate.Item2));
+                Output.DisplayError(new SyntaxError("Found more than one task with the same name", isDuplicate.Item2));
             }
 
             for (int i = 0; i < Tasks.Count; i++)
@@ -90,7 +91,7 @@ namespace Zenith.Models
                 }
             }
 
-            ErrorReporter.DisplayError(new UserInputError($"No task called '{name}' was found!"));
+            Output.DisplayError(new UserInputError($"No task called '{name}' was found!"));
 
             // This part is unreachable
             return 0;
@@ -122,23 +123,22 @@ namespace Zenith.Models
 
         public void PrintModel()
         {
-            Console.WriteLine("-----Task-----");
-            Console.WriteLine($"Name: {Name}");
+            Output.DisplayDebug($"Name: {Name}");
 
-            Console.WriteLine("Dependencies: ");
+            Output.DisplayDebug("Dependencies: ");
             foreach (string dep in Dependencies)
             {
-                Console.WriteLine($"\t{dep}");
+                Output.DisplayDebug($"\t{dep}");
             }
 
-            Console.WriteLine("Commands:");
+            Output.DisplayDebug("Commands: ");
             foreach (string cmd in Commands)
             {
-                Console.WriteLine($"\t{cmd}");
+                Output.DisplayDebug($"\t{cmd}");
             }
 
-            Console.WriteLine($"LineNumber: {LineNumber}");
-            Console.WriteLine("------------------------");
+            Output.DisplayDebug($"Line Number: {LineNumber}");
+            Output.DisplayDebug("==================");
         }
     }
 }
