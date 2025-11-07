@@ -34,7 +34,7 @@ namespace Zenith.Executor
         {
             try
             {
-                bool shouldOpenInTerminal = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && cmd.StartsWith(".\\")) || cmd.StartsWith("./");
+                bool shouldOpenInTerminal = cmd.StartsWith("./") || cmd.StartsWith(".\\");
 
                 if (shouldOpenInTerminal)
                 {
@@ -75,7 +75,7 @@ namespace Zenith.Executor
                 startInfo = new ProcessStartInfo
                 {
                     FileName = "gnome-terminal", // You can add fallback to xterm/konsole
-                    Arguments = $"-- bash -c '{cmd}; exec bash'",
+                    Arguments = $"-- bash -c '{cmd.Replace("'", "'\\''")}; exec bash'",
                     UseShellExecute = true,
                     CreateNoWindow = false,
                     WorkingDirectory = Directory.GetCurrentDirectory()
@@ -86,7 +86,7 @@ namespace Zenith.Executor
                 startInfo = new ProcessStartInfo
                 {
                     FileName = "osascript",
-                    Arguments = $"-e 'tell application \"Terminal\" to do script \"{cmd}\"'",
+                    Arguments = $"-e 'tell application \"Terminal\" to do script \"{cmd.Replace("\"", "\\\\\\\"")}\"'",
                     UseShellExecute = true,
                     CreateNoWindow = false
                 };
@@ -159,9 +159,10 @@ namespace Zenith.Executor
                     return;
                 }
 
+                process.WaitForExit();
+
                 string output = process.StandardOutput.ReadToEnd();
                 string error = process.StandardError.ReadToEnd();
-                process.WaitForExit();
 
                 int exitCode = process.ExitCode;
 
