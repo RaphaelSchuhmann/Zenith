@@ -62,6 +62,11 @@ namespace Zenith.Error
         public UserInputError(string message) : base($"Invalid input: {message}") { }
     }
 
+    public sealed class CommandError : ZenithException
+    {
+        public CommandError(string message) : base($"Command failed: {message}") { }
+    }
+
     public sealed class Internal : ZenithException
     {
         public Internal(string message) : base($"Internal error: {message}") { }
