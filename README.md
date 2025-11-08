@@ -28,7 +28,7 @@ Use variables for reusability and clarity:
 set CC = gcc
 set OUT = bin
 
-task compile:
+task compile: null
     ${CC} -o ${OUT}/app main.c
 ```
 
@@ -96,7 +96,7 @@ set OUT = bin
 set CC = gcc
 
 # Define tasks
-task clean:
+task clean: null
     echo Cleaning...
     rm -rf ${OUT}
 
