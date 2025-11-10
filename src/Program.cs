@@ -59,8 +59,9 @@ namespace Zenith
             rootCommand.Subcommands.Add(versionCommand);
 
             ParseResult parseResult = rootCommand.Parse(args);
-            Logger.Instance.Write("Zenith exited successfully", LoggerLevel.IGNORE);
-            return parseResult.Invoke();
+            int exitCode = parseResult.Invoke();
+            if (exitCode == 0) Logger.Instance.Write("Zenith exited successfully", LoggerLevel.IGNORE);
+            return exitCode;
         }
     }
 }

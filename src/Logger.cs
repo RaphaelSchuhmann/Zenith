@@ -7,8 +7,8 @@ namespace Zenith.Logs
     public sealed class Logger
     {
         private static readonly Logger _instance = new Logger();
-        private readonly string LogDirectory = string.Empty;
-        private readonly string LogFilePath = string.Empty;
+        private readonly string? LogDirectory;
+        private readonly string? LogFilePath;
 
         private Logger()
         {
@@ -17,7 +17,17 @@ namespace Zenith.Logs
                 LogDirectory = Path.Combine(Directory.GetCurrentDirectory(), ".zenith");
                 LogFilePath = Path.Combine(LogDirectory, "Zenith.Log");
 
-                if (File.Exists(LogDirectory))
+                if (LogDirectory == null)
+                {
+                    throw new Internal("Log directory cannot be null!");
+                }
+
+                if (LogFilePath == null)
+                {
+                    throw new Internal("Log file path cannot be null!");
+                }
+
+                if (File.Exists(LogDirectory) && !Directory.Exists(LogDirectory))
                 {
                     Output.DisplayError(new Internal(".zenith exists as a file, not a directory. Please delete or rename it."));
                 }
@@ -37,6 +47,8 @@ namespace Zenith.Logs
 
         public void Write(string msg, LoggerLevel level)
         {
+            if (LogFilePath == null) return;
+            
             string logLevel = string.Equals(level.ToString(), "IGNORE") ? "INFO" : level.ToString();
             string line = $"[{DateTime.Now:HH:mm:ss}] [{logLevel}] {msg}";
 
@@ -58,6 +70,8 @@ namespace Zenith.Logs
 
         public void WriteError(ZenithException ex)
         {
+            if (LogFilePath == null) return;
+
             string line = $"[{DateTime.Now:HH:mm:ss}] [ERROR] {ex.Message}";
             File.AppendAllText(LogFilePath, line + Environment.NewLine);
             Output.DisplayError(ex);
