@@ -3,6 +3,7 @@ using System.CommandLine;
 using Zenith.CLI;
 using Zenith.Display;
 using Zenith.Error;
+using Zenith.Logs;
 
 namespace Zenith
 {
@@ -10,6 +11,8 @@ namespace Zenith
     {
         static int Main(string[] args)
         {
+            Logger.Instance.Write("Starting Zenith run...", LoggerLevel.IGNORE);
+
             ZenithProgram zenith = new ZenithProgram();
 
             RootCommand rootCommand = new("An app for automating tasks");
@@ -21,10 +24,11 @@ namespace Zenith
 
             runCommand.SetAction(parseResult =>
             {
+                Logger.Instance.Write("Used 'run' command.", LoggerLevel.IGNORE);
                 string? taskName = parseResult.GetValue(runArg);
                 if (string.IsNullOrEmpty(taskName))
                 {
-                    Output.DisplayError(new UserInputError("Task name cannot be empty"));
+                    Logger.Instance.WriteError(new UserInputError("Task name cannot be empty"));
                     return 1;
                 }
 
@@ -36,6 +40,7 @@ namespace Zenith
 
             listCommand.SetAction(parseResult =>
             {
+                Logger.Instance.Write("Listing tasks.", LoggerLevel.IGNORE);
                 zenith.ListTasks();
                 return 0;
             });
@@ -44,6 +49,7 @@ namespace Zenith
 
             versionCommand.SetAction(parseResult =>
             {
+                Logger.Instance.Write("Displaying version.", LoggerLevel.IGNORE);
                 zenith.PrintVersion();
                 return 0;
             });
@@ -53,6 +59,7 @@ namespace Zenith
             rootCommand.Subcommands.Add(versionCommand);
 
             ParseResult parseResult = rootCommand.Parse(args);
+            Logger.Instance.Write("Zenith exited successfully", LoggerLevel.IGNORE);
             return parseResult.Invoke();
         }
     }

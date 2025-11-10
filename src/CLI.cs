@@ -3,6 +3,7 @@ using System.Reflection;
 using Zenith.Display;
 using Zenith.Error;
 using Zenith.Executor;
+using Zenith.Logs;
 using Zenith.Models;
 using Zenith.Parse;
 using Zenith.Reader;
@@ -12,7 +13,7 @@ namespace Zenith.CLI
 {
     public class ZenithProgram
     {
-        private string CurrentDirectory { get; set; } = Path.Combine(Directory.GetCurrentDirectory(), "Taskfile.txt");
+        private string CurrentDirectory { get; } = Path.Combine(Directory.GetCurrentDirectory(), "Taskfile.txt");
 
         private TaskfileModel LoadTaskFile()
         {
@@ -71,12 +72,13 @@ namespace Zenith.CLI
             }
             else
             {
-                Output.DisplayError(new Internal("Could not determine assembly information!"));
+                Logger.Instance.WriteError(new Internal("Could not determine assembly information!"));
             }
         }
 
         public void PrintCurrentDir()
         {
+            Logger.Instance.Write($"Current directory: {CurrentDirectory}", LoggerLevel.INFO);
             Output.DisplayDebug($"Current directory: {CurrentDirectory}");
         }
     }

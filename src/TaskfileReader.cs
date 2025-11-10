@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using Zenith.Display;
 using Zenith.Error;
+using Zenith.Logs;
 
 namespace Zenith.Reader
 {
@@ -10,9 +11,10 @@ namespace Zenith.Reader
         public string FileContent = "";
         public void ReadFile(string path)
         {
+            Logger.Instance.Write("Reading Taskfile.txt", LoggerLevel.INFO);
             if (string.IsNullOrEmpty(path))
             {
-                Output.DisplayError(new Internal("No file path was found"));
+                Logger.Instance.WriteError(new Internal("No file path was found"));
             }
 
             try
@@ -32,7 +34,7 @@ namespace Zenith.Reader
             }
             catch (Exception ex)
             {
-                Output.DisplayError(new IoError("Error while reading Taskfile", ex));
+                Logger.Instance.WriteError(new IoError("Error while reading Taskfile", ex));
             }
         }
 
