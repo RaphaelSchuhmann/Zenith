@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Zenith.Error;
 using Zenith.Models;
 using Zenith.Display;
+using Zenith.Logs;
 
 namespace Zenith.Executor
 {
@@ -20,7 +21,7 @@ namespace Zenith.Executor
             {
                 foreach (TaskModel task in TasksQueue)
                 {
-                    Output.DisplayInfo($"Task: {task.Name}");
+                    Logger.Instance.Write($"Executing Task: {task.Name}", LoggerLevel.INFO);
                     List<string> commands = task.Commands;
 
                     foreach (string cmd in commands)
@@ -33,6 +34,7 @@ namespace Zenith.Executor
 
         public void ExecuteCommand(string cmd)
         {
+            Logger.Instance.Write($"Executing command: {cmd}", LoggerLevel.IGNORE);
             try
             {
                 bool shouldOpenInTerminal = cmd.StartsWith("./") || cmd.StartsWith(".\\");
@@ -48,12 +50,13 @@ namespace Zenith.Executor
             }
             catch (Exception ex)
             {
-                Output.DisplayError(new Internal($"Critical system error while executing command '{cmd}': {ex.Message}"));
+                Logger.Instance.WriteError(new Internal($"Critical system error while executing command '{cmd}': {ex.Message}"));
             }
         }
 
         private void LaunchInNewTerminal(string cmd)
         {
+            Logger.Instance.Write($"Executing command {cmd} in a new terminal", LoggerLevel.IGNORE);
             ProcessStartInfo startInfo;
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -94,7 +97,7 @@ namespace Zenith.Executor
             }
             else
             {
-                Output.DisplayError(new Internal("Unsupported platform for executing commands"));
+                Logger.Instance.WriteError(new Internal("Unsupported platform for executing commands"));
                 return;
             }
 
@@ -107,22 +110,23 @@ namespace Zenith.Executor
 
                     if (exitCode != 0 && !(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && exitCode == unchecked((int)0xC000013A)))
                     {
-                        Output.DisplayError(new CommandError($"Command '{cmd}' failed with exit code {exitCode}."));
+                        Logger.Instance.WriteError(new CommandError($"Command '{cmd}' failed with exit code {exitCode}."));
                     }
                     else
                     {
-                        Output.DisplaySuccess($"Command '{cmd}' finished (terminal closed by user).");
+                        Logger.Instance.Write($"Command '{cmd}' finished (terminal closed by user).", LoggerLevel.SUCCESS);
                     }
                 }
                 else
                 {
-                    Output.DisplayError(new Internal($"Could not start new terminal for command: {cmd}"));
+                    Logger.Instance.WriteError(new Internal($"Could not start new terminal for command: {cmd}"));
                 }
             }
         }
 
         private void RunHeadless(string cmd)
         {
+            Logger.Instance.Write($"Executing command {cmd} headless.", LoggerLevel.IGNORE);
             string shell;
             string argumentPrefix;
 
@@ -154,7 +158,7 @@ namespace Zenith.Executor
             {
                 if (process == null)
                 {
-                    Output.DisplayError(new Internal($"Could not start shell process: {shell}"));
+                    Logger.Instance.WriteError(new Internal($"Could not start shell process: {shell}"));
                     return; // Unreachable but needed to silence compiler
                 }
 
@@ -170,27 +174,29 @@ namespace Zenith.Executor
 
                 if (exitCode != 0)
                 {
-                    Output.DisplayError(new CommandError($"Command '{cmd}' failed with exit code {exitCode}.\nError output: {error}"));
+                    Logger.Instance.WriteError(new CommandError($"Command '{cmd}' failed with exit code {exitCode}.\nError output: {error}"));
                 }
                 else
                 {
-                    Output.DisplaySuccess($"Command '{cmd}' finished successfully.");
+                    Logger.Instance.Write($"Command '{cmd}' finished successfully.", LoggerLevel.SUCCESS);
                 }
             }
         }
 
         public void ResolveDependencies(string taskName)
         {
+            Logger.Instance.Write($"Resolving dependency: {taskName}", LoggerLevel.IGNORE);
+
             if (string.IsNullOrEmpty(taskName))
             {
-                Output.DisplayError(new UserInputError("Task name cannot be empty!"));
+                Logger.Instance.WriteError(new UserInputError("Task name cannot be empty!"));
             }
 
             TaskModel mainTask = Taskfile.Tasks[Taskfile.FindTaskModelIndex(taskName)];
 
             if (!ActiveTasks.Add(mainTask.Name))
             {
-                Output.DisplayError(new SyntaxError("Infinite loop detected", mainTask.LineNumber));
+                Logger.Instance.WriteError(new SyntaxError("Infinite loop detected", mainTask.LineNumber));
             }
 
             try
@@ -204,7 +210,7 @@ namespace Zenith.Executor
                         (bool, int) isDuplicate = Taskfile.CheckDuplicateTasks(dep);
                         if (isDuplicate.Item1)
                         {
-                            Output.DisplayError(new SyntaxError("Found more than one task with the same name", isDuplicate.Item2));
+                            Logger.Instance.WriteError(new SyntaxError("Found more than one task with the same name", isDuplicate.Item2));
                         }
 
                         if (!TaskQueueContains(dep))
@@ -227,6 +233,7 @@ namespace Zenith.Executor
 
         public void ResolveVariables()
         {
+            Logger.Instance.Write("Resolving Variables", LoggerLevel.IGNORE);
             if (TasksQueue.Count > 0)
             {
                 foreach (TaskModel task in TasksQueue)
@@ -234,7 +241,7 @@ namespace Zenith.Executor
                     List<string> commands = task.Commands;
 
                     // In theory this will never be true as it should already have checked that before
-                    if (commands.Count <= 0) Output.DisplayError(new SyntaxError("Invalid task declaration, commands can not be empty", task.LineNumber));
+                    if (commands.Count <= 0) Logger.Instance.WriteError(new SyntaxError("Invalid task declaration, commands can not be empty", task.LineNumber));
 
                     string pattern = @"\$\{([A-Za-z_][A-Za-z0-9_]+)\}";
 

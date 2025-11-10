@@ -2,6 +2,7 @@ using System;
 using System.Text.RegularExpressions;
 using Zenith.Display;
 using Zenith.Error;
+using Zenith.Logs;
 
 namespace Zenith.Tokenization
 {
@@ -15,11 +16,12 @@ namespace Zenith.Tokenization
         /// </summary>
         public List<Token> Tokenize(string input)
         {
+            Logger.Instance.Write("Generating tokens...", LoggerLevel.IGNORE);
             _tokens.Clear();
 
             if (string.IsNullOrEmpty(input))
             {
-                Output.DisplayError(new TokenError("EOF reached unexpectedly! Is your Taskfile empty?"));
+                Logger.Instance.WriteError(new TokenError("EOF reached unexpectedly! Is your Taskfile empty?"));
             }
 
             string[] lines = input.Split(new[] { '\n' }, StringSplitOptions.None);
@@ -119,7 +121,7 @@ namespace Zenith.Tokenization
             var m = Regex.Match(trimmedLine, @"^set\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$");
             if (!m.Success)
             {
-                Output.DisplayError(new SyntaxError($"Unexpected token {trimmedLine}", lineNumber));
+                Logger.Instance.WriteError(new SyntaxError($"Unexpected token {trimmedLine}", lineNumber));
             }
 
             string name = m.Groups[1].Value;
@@ -156,7 +158,7 @@ namespace Zenith.Tokenization
 
                 if (string.Equals(after, "null"))
                 {
-                    Output.DisplayError(new SyntaxError("Invalid task name 'null'", lineNumber));
+                    Logger.Instance.WriteError(new SyntaxError("Invalid task name 'null'", lineNumber));
                 }
 
                 _tokens.Add(new Token(TokenType.IDENTIFIER, after, lineNumber));
@@ -168,7 +170,7 @@ namespace Zenith.Tokenization
 
                 if (string.Equals(left, "null"))
                 {
-                    Output.DisplayError(new SyntaxError("Invalid task name 'null'", lineNumber));
+                    Logger.Instance.WriteError(new SyntaxError("Invalid task name 'null'", lineNumber));
                 }
 
                 _tokens.Add(new Token(TokenType.IDENTIFIER, left, lineNumber));
@@ -194,7 +196,7 @@ namespace Zenith.Tokenization
             }
             else
             {
-                Output.DisplayError(new SyntaxError("Dependencies cannot be empty", lineNumber));
+                Logger.Instance.WriteError(new SyntaxError("Dependencies cannot be empty", lineNumber));
             }
         }
 
