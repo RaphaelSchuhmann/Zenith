@@ -4,6 +4,11 @@ using Zenith.Error;
 
 namespace Zenith.Logs
 {
+    /// <summary>
+    /// Provides simple file-based logging for the application and exposes a singleton instance via <see cref="Instance"/>.
+    /// The logger writes timestamped entries to a log file located in the .zenith directory below the current working directory
+    /// and forwards informational messages to the <see cref="Output"/> helper for user-visible output.
+    /// </summary>
     public sealed class Logger
     {
         private static readonly Logger _instance = new Logger();
@@ -43,8 +48,17 @@ namespace Zenith.Logs
             }
         }
 
+        /// <summary>
+        /// Gets the global singleton instance of <see cref="Logger"/>.
+        /// </summary>
         public static Logger Instance => _instance;
 
+        /// <summary>
+        /// Writes a message to the log file with the specified severity. Certain levels are also displayed to the console
+        /// using the <see cref="Output"/> helper (INFO, WARNING, SUCCESS).
+        /// </summary>
+        /// <param name="msg">The message to write to the log.</param>
+        /// <param name="level">The severity level of the log entry.</param>
         public void Write(string msg, LoggerLevel level)
         {
             if (LogFilePath == null) return;
@@ -68,6 +82,10 @@ namespace Zenith.Logs
             }
         }
 
+        /// <summary>
+        /// Writes an error entry for the provided <see cref="ZenithException"/> to the log and displays the error to the user.
+        /// </summary>
+        /// <param name="ex">The exception to log and display.</param>
         public void WriteError(ZenithException ex)
         {
             if (LogFilePath == null) return;
@@ -78,6 +96,9 @@ namespace Zenith.Logs
         }
     }
 
+    /// <summary>
+    /// Severity levels used by the logger to categorize messages and determine presentation behaviour.
+    /// </summary>
     public enum LoggerLevel
     {
         INFO, WARNING, ERROR, SUCCESS, IGNORE

@@ -11,10 +11,21 @@ using Zenith.Tokenization;
 
 namespace Zenith.CLI
 {
+    /// <summary>
+    /// Entry point class for the Zenith command-line interface.
+    /// Provides methods to load the Taskfile, list available tasks, run tasks and print diagnostic information.
+    /// </summary>
     public class ZenithProgram
     {
+        /// <summary>
+        /// The absolute path to the Taskfile used by the program. Defaults to the current working directory + "Taskfile.txt".
+        /// </summary>
         private string CurrentDirectory { get; } = Path.Combine(Directory.GetCurrentDirectory(), "Taskfile.txt");
 
+        /// <summary>
+        /// Reads, tokenizes and parses the Taskfile from disk into a <see cref="TaskfileModel"/> instance.
+        /// </summary>
+        /// <returns>A <see cref="TaskfileModel"/> representing the parsed Taskfile.</returns>
         private TaskfileModel LoadTaskFile()
         {
             TaskfileReader reader = new TaskfileReader();
@@ -27,6 +38,10 @@ namespace Zenith.CLI
             return parser.Parse(tokens);
         }
 
+        /// <summary>
+        /// Executes the specified task by resolving its dependencies and variables, then running the task actions.
+        /// </summary>
+        /// <param name="taskName">The name of the task to execute.</param>
         public void RunTask(string taskName)
         {
             TaskfileModel taskfileModel = LoadTaskFile();
@@ -38,6 +53,9 @@ namespace Zenith.CLI
             exec.ExecuteTasks();
         }
 
+        /// <summary>
+        /// Enumerates and prints the names of all tasks defined in the current Taskfile.
+        /// </summary>
         public void ListTasks()
         {
             TaskfileModel taskfileModel = LoadTaskFile();
@@ -50,6 +68,10 @@ namespace Zenith.CLI
             }
         }
 
+        /// <summary>
+        /// Prints the application version and the current .NET runtime version to the output.
+        /// If assembly information cannot be determined an internal error is logged.
+        /// </summary>
         public void PrintVersion()
         {
             Assembly? assembly = Assembly.GetEntryAssembly();
@@ -76,6 +98,9 @@ namespace Zenith.CLI
             }
         }
 
+        /// <summary>
+        /// Logs and outputs the path to the Taskfile currently used as the working directory.
+        /// </summary>
         public void PrintCurrentDir()
         {
             Logger.Instance.Write($"Current directory: {CurrentDirectory}", LoggerLevel.INFO);

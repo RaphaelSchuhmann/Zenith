@@ -9,12 +9,24 @@ using Zenith.Logs;
 
 namespace Zenith.Executor
 {
+    /// <summary>
+    /// Executes tasks defined in a <see cref="TaskfileModel"/> by resolving dependencies, replacing variables
+    /// and running commands either headless or in a new terminal.
+    /// </summary>
     public class TaskExecutor
     {
         private readonly Queue<TaskModel> TasksQueue = new Queue<TaskModel>();
         private readonly HashSet<string> ActiveTasks = new();
+        /// <summary>
+        /// The taskfile model that contains all task and variable definitions to be executed.
+        /// This must be set before calling <see cref="ResolveDependencies(string)"/> or <see cref="ExecuteTasks()"/>.
+        /// </summary>
         public TaskfileModel Taskfile { get; set; } = new();
 
+        /// <summary>
+        /// Executes all tasks currently enqueued in the internal queue in FIFO order.
+        /// Each task's commands are executed in sequence.
+        /// </summary>
         public void ExecuteTasks()
         {
             if (TasksQueue.Count > 0)
@@ -32,6 +44,11 @@ namespace Zenith.Executor
             }
         }
 
+        /// <summary>
+        /// Executes a single command string. Commands that start with "./" or ".\" will open in a new terminal,
+        /// otherwise they are executed headless and their output is captured.
+        /// </summary>
+        /// <param name="cmd">The command to execute.</param>
         public void ExecuteCommand(string cmd)
         {
             Logger.Instance.Write($"Executing command: {cmd}", LoggerLevel.IGNORE);
@@ -54,6 +71,10 @@ namespace Zenith.Executor
             }
         }
 
+        /// <summary>
+        /// Launches the provided command in a new platform-appropriate terminal window and waits for it to close.
+        /// Errors starting the terminal or non-zero exit codes are logged as command errors.
+        /// </summary>
         private void LaunchInNewTerminal(string cmd)
         {
             Logger.Instance.Write($"Executing command {cmd} in a new terminal", LoggerLevel.IGNORE);
@@ -124,6 +145,10 @@ namespace Zenith.Executor
             }
         }
 
+        /// <summary>
+        /// Executes the provided command in a headless shell, captures stdout/stderr and logs failures as command errors.
+        /// </summary>
+        /// <param name="cmd">The command to run in a headless shell.</param>
         private void RunHeadless(string cmd)
         {
             Logger.Instance.Write($"Executing command {cmd} headless.", LoggerLevel.IGNORE);
@@ -183,6 +208,11 @@ namespace Zenith.Executor
             }
         }
 
+        /// <summary>
+        /// Recursively resolves dependencies for the named task and enqueues tasks in order of execution.
+        /// Detects duplicate tasks and circular dependencies and logs errors accordingly.
+        /// </summary>
+        /// <param name="taskName">The name of the task to resolve and enqueue.</param>
         public void ResolveDependencies(string taskName)
         {
             Logger.Instance.Write($"Resolving dependency: {taskName}", LoggerLevel.IGNORE);
@@ -231,6 +261,9 @@ namespace Zenith.Executor
             }
         }
 
+        /// <summary>
+        /// Replaces variable placeholders (${name}) in each queued task's commands using the variables defined in the taskfile.
+        /// </summary>
         public void ResolveVariables()
         {
             Logger.Instance.Write("Resolving Variables", LoggerLevel.IGNORE);
@@ -263,6 +296,9 @@ namespace Zenith.Executor
             }
         }
 
+        /// <summary>
+        /// Prints the current execution queue for debugging purposes.
+        /// </summary>
         public void PrintQueue()
         {
             Output.DisplayDebug("===== Queue =====");
@@ -274,6 +310,11 @@ namespace Zenith.Executor
 
         #region Helpers
 
+        /// <summary>
+        /// Returns whether the internal task queue already contains a task with the given name.
+        /// </summary>
+        /// <param name="name">The task name to search for.</param>
+        /// <returns>True if the queue contains a task with the name; otherwise false.</returns>
         private bool TaskQueueContains(string name)
         {
             if (string.IsNullOrEmpty(name)) return false;

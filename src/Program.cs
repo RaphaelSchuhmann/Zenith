@@ -7,8 +7,18 @@ using Zenith.Logs;
 
 namespace Zenith
 {
+    /// <summary>
+    /// Application entry point for the Zenith command-line interface.
+    /// Sets up available commands and delegates execution to <see cref="Zenith.CLI.ZenithProgram"/>.
+    /// </summary>
     internal class Program
     {
+        /// <summary>
+        /// Main entry point invoked by the runtime. Initializes the logger, constructs CLI commands
+        /// (run, list, version), parses arguments and invokes the selected command.
+        /// Returns 0 on success or a non-zero exit code on error.
+        /// </summary>
+        /// <param name="args">Array of command-line arguments.</param>
         static int Main(string[] args)
         {
             Logger.Instance.Write("Starting Zenith run...", LoggerLevel.IGNORE);

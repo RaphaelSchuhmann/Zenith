@@ -6,14 +6,20 @@ using Zenith.Logs;
 
 namespace Zenith.Tokenization
 {
+    /// <summary>
+    /// Lexical analyzer that converts preprocessed Taskfile text into a sequence of <see cref="Token"/> instances.
+    /// Recognizes task headers, set statements, commands, dependencies and newlines and attaches source line numbers.
+    /// </summary>
     public class Lexer
     {
         private readonly List<Token> _tokens = new();
 
         /// <summary>
-        /// Main entry: takes preprocessed file content (no blank lines, no comments)
-        /// and returns a list of tokens with correct line numbers.
+        /// Tokenizes the provided preprocessed input into a list of tokens.
+        /// The input should have comments and fully blank lines removed prior to calling this method.
         /// </summary>
+        /// <param name="input">Preprocessed Taskfile content.</param>
+        /// <returns>A list of <see cref="Token"/> objects with correct types and line numbers.</returns>
         public List<Token> Tokenize(string input)
         {
             Logger.Instance.Write("Generating tokens...", LoggerLevel.IGNORE);
@@ -92,6 +98,9 @@ namespace Zenith.Tokenization
 
         #region Helpers
 
+        /// <summary>
+        /// Counts leading spaces or tabs to determine indentation level used for command detection.
+        /// </summary>
         private static int CountLeadingTabsOrSpaces(string s)
         {
             if (string.IsNullOrEmpty(s)) return 0;
@@ -100,6 +109,10 @@ namespace Zenith.Tokenization
             return count;
         }
 
+        /// <summary>
+        /// Finds the index of a colon that is not inside quoted strings (top-level colon).
+        /// Returns -1 when no top-level colon is found.
+        /// </summary>
         private static int IndexOfTopLevelColon(string line)
         {
             bool inQuotes = false;
@@ -112,7 +125,9 @@ namespace Zenith.Tokenization
             return -1;
         }
 
-        // Parse "set NAME = VALUE" with optional quoting for VALUE 
+        /// <summary>
+        /// Parses a "set NAME = VALUE" top-level line into corresponding tokens. VALUE may be quoted.
+        /// </summary>
         private void ParseSetLine(string trimmedLine, int lineNumber)
         {
             // trimmedLine starts with "set "
@@ -144,7 +159,9 @@ namespace Zenith.Tokenization
             }
         }
 
-        // Parse a task header at colonIndex: left part is a name (maybe "task name"), right part is dependencies
+        /// <summary>
+        /// Parses a task header (left: name, right: comma-separated dependencies) into tokens.
+        /// </summary>
         private void ParseTaskHeader(string trimmedLine, int colonIndex, int lineNumber)
         {
             string left = trimmedLine.Substring(0, colonIndex).Trim();
@@ -200,6 +217,9 @@ namespace Zenith.Tokenization
             }
         }
 
+        /// <summary>
+        /// Splits a comma-separated dependency list while respecting quoted dependency names.
+        /// </summary>
         private static IEnumerable<string> SplitDependencies(string input)
         {
             if (string.IsNullOrEmpty(input))
@@ -238,6 +258,10 @@ namespace Zenith.Tokenization
 
         #endregion
 
+        /// <summary>
+        /// Prints debugging information for a list of tokens using the <see cref="Output"/> helper.
+        /// </summary>
+        /// <param name="tokens">Tokens to print.</param>
         public void PrintTokens(List<Token> tokens)
         {
             Output.DisplayDebug("===== Tokens =====");
@@ -248,13 +272,34 @@ namespace Zenith.Tokenization
         }
     }
 
+    /// <summary>
+    /// Represents a lexical token emitted by the <see cref="Lexer"/>.
+    /// </summary>
     public class Token
     {
+        /// <summary>
+        /// The general category of the token when applicable (defaults to <see cref="TokenType.UNKNOWN"/>).
+        /// </summary>
         public TokenType GeneralType { get; set; } = TokenType.UNKNOWN;
+
+        /// <summary>
+        /// The concrete token type (e.g. <see cref="TokenType.IDENTIFIER"/> or <see cref="TokenType.STRING"/>).
+        /// </summary>
         public TokenType Type { get; set; }
+
+        /// <summary>
+        /// The textual value of the token (without surrounding quotes for strings).
+        /// </summary>
         public string Value { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The 1-based line number in the source Taskfile where the token was found.
+        /// </summary>
         public int LineNumber { get; set; }
 
+        /// <summary>
+        /// Creates a new <see cref="Token"/> instance.
+        /// </summary>
         public Token(TokenType type, string value, int lineNumber, TokenType generalType = TokenType.UNKNOWN)
         {
             Type = type;
@@ -263,6 +308,9 @@ namespace Zenith.Tokenization
             GeneralType = generalType;
         }
 
+        /// <summary>
+        /// Writes a debug representation of this token to the configured output.
+        /// </summary>
         public void PrintToken()
         {
             Output.DisplayDebug($"Type: {Type}");
@@ -273,6 +321,9 @@ namespace Zenith.Tokenization
         }
     }
 
+    /// <summary>
+    /// All token types produced by the lexer.
+    /// </summary>
     public enum TokenType
     {
         KEYWORD, KEYWORD_SET, KEYWORD_TASK, IDENTIFIER, EQUALS, STRING,

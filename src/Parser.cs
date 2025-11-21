@@ -7,8 +7,18 @@ using Zenith.Tokenization;
 
 namespace Zenith.Parse
 {
+    /// <summary>
+    /// Parses a sequence of <see cref="Token"/> instances produced by the lexer into a <see cref="TaskfileModel"/>.
+    /// Responsible for grouping tokens into logical blocks (variables and tasks) and delegating to specific parsers.
+    /// </summary>
     public class Parser
     {
+        /// <summary>
+        /// Parses the provided token list into a strongly-typed <see cref="TaskfileModel"/> containing variables and tasks.
+        /// Throws or logs an internal error when tokens are malformed or missing.
+        /// </summary>
+        /// <param name="tokens">The list of tokens emitted by the lexer.</param>
+        /// <returns>A populated <see cref="TaskfileModel"/> representing the Taskfile.</returns>
         public TaskfileModel Parse(List<Token> tokens)
         {
             Logger.Instance.Write("Parsing tokens...", LoggerLevel.IGNORE);
@@ -69,7 +79,10 @@ namespace Zenith.Parse
 
         #region Helpers
 
-        // Note that line number here is irrelevant as it is not checked for
+        /// <summary>
+        /// Returns the indexes of tokens in the provided list that match the searched token type.
+        /// When <paramref name="filterGeneralType"/> is true the GeneralType property is compared instead of Type.
+        /// </summary>
         private static List<int> GetTokenIndexes(List<Token> tokens, Token searchedToken, bool filterGeneralType = false)
         {
             List<int> indexes = new();
@@ -95,6 +108,10 @@ namespace Zenith.Parse
             return indexes;
         }
 
+        /// <summary>
+        /// Parses a token group representing a variable declaration into a <see cref="VariableModel"/>.
+        /// Expects the token group to follow the pattern: KEYWORD_SET, IDENTIFIER, EQUALS, STRING, NEWLINE...
+        /// </summary>
         private static VariableModel ParseVariableGroup(TokenGroup tokenGroup)
         {
             VariableModel variable = new VariableModel();
@@ -112,6 +129,10 @@ namespace Zenith.Parse
             return variable;
         }
 
+        /// <summary>
+        /// Parses a token group representing a task declaration into a <see cref="TaskModel"/>.
+        /// Extracts task name, dependencies, commands and associated line numbers. Validation errors will be logged.
+        /// </summary>
         private static TaskModel ParseTaskGroup(TokenGroup tokenGroup)
         {
             TaskModel task = new TaskModel();
@@ -168,17 +189,33 @@ namespace Zenith.Parse
         #endregion
     }
 
+    /// <summary>
+    /// Represents a contiguous group of tokens that belong together (for example a variable declaration or a task block).
+    /// </summary>
     class TokenGroup
     {
+        /// <summary>
+        /// The tokens that make up this group.
+        /// </summary>
         public List<Token> Group { get; set; } = new();
+
+        /// <summary>
+        /// The primary token type of the group (e.g. <see cref="TokenType.KEYWORD_SET"/> or <see cref="TokenType.KEYWORD_TASK"/>).
+        /// </summary>
         public TokenType Type { get; set; }
 
+        /// <summary>
+        /// Creates a new token group for the provided tokens and type.
+        /// </summary>
         public TokenGroup(List<Token> group, TokenType type)
         {
             Group = group;
             Type = type;
         }
 
+        /// <summary>
+        /// Prints a debug representation of the group and its tokens to the configured output.
+        /// </summary>
         public void PrintGroup()
         {
             Output.DisplayDebug("===== Printing Group =====");
