@@ -5,22 +5,35 @@ using System.Text.RegularExpressions;
 using Zenith.Error;
 using Zenith.Models;
 using Zenith.Display;
+using Zenith.Logs;
 
 namespace Zenith.Executor
 {
+    /// <summary>
+    /// Executes tasks defined in a <see cref="TaskfileModel"/> by resolving dependencies, replacing variables
+    /// and running commands either headless or in a new terminal.
+    /// </summary>
     public class TaskExecutor
     {
         private readonly Queue<TaskModel> TasksQueue = new Queue<TaskModel>();
         private readonly HashSet<string> ActiveTasks = new();
+        /// <summary>
+        /// The taskfile model that contains all task and variable definitions to be executed.
+        /// This must be set before calling <see cref="ResolveDependencies(string)"/> or <see cref="ExecuteTasks()"/>.
+        /// </summary>
         public TaskfileModel Taskfile { get; set; } = new();
 
+        /// <summary>
+        /// Executes all tasks currently enqueued in the internal queue in FIFO order.
+        /// Each task's commands are executed in sequence.
+        /// </summary>
         public void ExecuteTasks()
         {
             if (TasksQueue.Count > 0)
             {
                 foreach (TaskModel task in TasksQueue)
                 {
-                    Output.DisplayInfo($"Task: {task.Name}");
+                    Logger.Instance.Write($"Executing Task: {task.Name}", LoggerLevel.INFO);
                     List<string> commands = task.Commands;
 
                     foreach (string cmd in commands)
@@ -31,8 +44,14 @@ namespace Zenith.Executor
             }
         }
 
+        /// <summary>
+        /// Executes a single command string. Commands that start with "./" or ".\" will open in a new terminal,
+        /// otherwise they are executed headless and their output is captured.
+        /// </summary>
+        /// <param name="cmd">The command to execute.</param>
         public void ExecuteCommand(string cmd)
         {
+            Logger.Instance.Write($"Executing command: {cmd}", LoggerLevel.IGNORE);
             try
             {
                 bool shouldOpenInTerminal = cmd.StartsWith("./") || cmd.StartsWith(".\\");
@@ -48,12 +67,17 @@ namespace Zenith.Executor
             }
             catch (Exception ex)
             {
-                Output.DisplayError(new Internal($"Critical system error while executing command '{cmd}': {ex.Message}"));
+                Logger.Instance.WriteError(new Internal($"Critical system error while executing command '{cmd}': {ex.Message}"));
             }
         }
 
+        /// <summary>
+        /// Launches the provided command in a new platform-appropriate terminal window and waits for it to close.
+        /// Errors starting the terminal or non-zero exit codes are logged as command errors.
+        /// </summary>
         private void LaunchInNewTerminal(string cmd)
         {
+            Logger.Instance.Write($"Executing command {cmd} in a new terminal", LoggerLevel.IGNORE);
             ProcessStartInfo startInfo;
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -94,7 +118,7 @@ namespace Zenith.Executor
             }
             else
             {
-                Output.DisplayError(new Internal("Unsupported platform for executing commands"));
+                Logger.Instance.WriteError(new Internal("Unsupported platform for executing commands"));
                 return;
             }
 
@@ -107,22 +131,27 @@ namespace Zenith.Executor
 
                     if (exitCode != 0 && !(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && exitCode == unchecked((int)0xC000013A)))
                     {
-                        Output.DisplayError(new CommandError($"Command '{cmd}' failed with exit code {exitCode}."));
+                        Logger.Instance.WriteError(new CommandError($"Command '{cmd}' failed with exit code {exitCode}."));
                     }
                     else
                     {
-                        Output.DisplaySuccess($"Command '{cmd}' finished (terminal closed by user).");
+                        Logger.Instance.Write($"Command '{cmd}' finished (terminal closed by user).", LoggerLevel.SUCCESS);
                     }
                 }
                 else
                 {
-                    Output.DisplayError(new Internal($"Could not start new terminal for command: {cmd}"));
+                    Logger.Instance.WriteError(new Internal($"Could not start new terminal for command: {cmd}"));
                 }
             }
         }
 
+        /// <summary>
+        /// Executes the provided command in a headless shell, captures stdout/stderr and logs failures as command errors.
+        /// </summary>
+        /// <param name="cmd">The command to run in a headless shell.</param>
         private void RunHeadless(string cmd)
         {
+            Logger.Instance.Write($"Executing command {cmd} headless.", LoggerLevel.IGNORE);
             string shell;
             string argumentPrefix;
 
@@ -154,7 +183,7 @@ namespace Zenith.Executor
             {
                 if (process == null)
                 {
-                    Output.DisplayError(new Internal($"Could not start shell process: {shell}"));
+                    Logger.Instance.WriteError(new Internal($"Could not start shell process: {shell}"));
                     return; // Unreachable but needed to silence compiler
                 }
 
@@ -170,27 +199,34 @@ namespace Zenith.Executor
 
                 if (exitCode != 0)
                 {
-                    Output.DisplayError(new CommandError($"Command '{cmd}' failed with exit code {exitCode}.\nError output: {error}"));
+                    Logger.Instance.WriteError(new CommandError($"Command '{cmd}' failed with exit code {exitCode}.\nError output: {error}"));
                 }
                 else
                 {
-                    Output.DisplaySuccess($"Command '{cmd}' finished successfully.");
+                    Logger.Instance.Write($"Command '{cmd}' finished successfully.", LoggerLevel.SUCCESS);
                 }
             }
         }
 
+        /// <summary>
+        /// Recursively resolves dependencies for the named task and enqueues tasks in order of execution.
+        /// Detects duplicate tasks and circular dependencies and logs errors accordingly.
+        /// </summary>
+        /// <param name="taskName">The name of the task to resolve and enqueue.</param>
         public void ResolveDependencies(string taskName)
         {
+            Logger.Instance.Write($"Resolving dependency: {taskName}", LoggerLevel.IGNORE);
+
             if (string.IsNullOrEmpty(taskName))
             {
-                Output.DisplayError(new UserInputError("Task name cannot be empty!"));
+                Logger.Instance.WriteError(new UserInputError("Task name cannot be empty!"));
             }
 
             TaskModel mainTask = Taskfile.Tasks[Taskfile.FindTaskModelIndex(taskName)];
 
             if (!ActiveTasks.Add(mainTask.Name))
             {
-                Output.DisplayError(new SyntaxError("Infinite loop detected", mainTask.LineNumber));
+                Logger.Instance.WriteError(new SyntaxError("Infinite loop detected", mainTask.LineNumber));
             }
 
             try
@@ -204,7 +240,7 @@ namespace Zenith.Executor
                         (bool, int) isDuplicate = Taskfile.CheckDuplicateTasks(dep);
                         if (isDuplicate.Item1)
                         {
-                            Output.DisplayError(new SyntaxError("Found more than one task with the same name", isDuplicate.Item2));
+                            Logger.Instance.WriteError(new SyntaxError("Found more than one task with the same name", isDuplicate.Item2));
                         }
 
                         if (!TaskQueueContains(dep))
@@ -225,8 +261,12 @@ namespace Zenith.Executor
             }
         }
 
+        /// <summary>
+        /// Replaces variable placeholders (${name}) in each queued task's commands using the variables defined in the taskfile.
+        /// </summary>
         public void ResolveVariables()
         {
+            Logger.Instance.Write("Resolving Variables", LoggerLevel.IGNORE);
             if (TasksQueue.Count > 0)
             {
                 foreach (TaskModel task in TasksQueue)
@@ -234,7 +274,7 @@ namespace Zenith.Executor
                     List<string> commands = task.Commands;
 
                     // In theory this will never be true as it should already have checked that before
-                    if (commands.Count <= 0) Output.DisplayError(new SyntaxError("Invalid task declaration, commands can not be empty", task.LineNumber));
+                    if (commands.Count <= 0) Logger.Instance.WriteError(new SyntaxError("Invalid task declaration, commands can not be empty", task.LineNumber));
 
                     string pattern = @"\$\{([A-Za-z_][A-Za-z0-9_]+)\}";
 
@@ -256,6 +296,9 @@ namespace Zenith.Executor
             }
         }
 
+        /// <summary>
+        /// Prints the current execution queue for debugging purposes.
+        /// </summary>
         public void PrintQueue()
         {
             Output.DisplayDebug("===== Queue =====");
@@ -267,6 +310,11 @@ namespace Zenith.Executor
 
         #region Helpers
 
+        /// <summary>
+        /// Returns whether the internal task queue already contains a task with the given name.
+        /// </summary>
+        /// <param name="name">The task name to search for.</param>
+        /// <returns>True if the queue contains a task with the name; otherwise false.</returns>
         private bool TaskQueueContains(string name)
         {
             if (string.IsNullOrEmpty(name)) return false;

@@ -141,5 +141,6 @@ obj/
 
 Project Zenith.txt
 Taskfile.txt
+.zenith/
 
 temp/
