@@ -1,6 +1,6 @@
 # Zenith <img src="assets/Zenith_Logo.png" width=30>
 
-**Zenith** is a cross-platform, console-basd automation tool written in **C# (.NET 9)**.
+**Zenith** is a cross-platform, console-based automation tool written in **C# (.NET 9)**.
 It executes and manages custom-defined tasks from a simple text configuration file - **Taskfile.txt** - similar to `make`, `just`, or `ninja`, but with a more declarative
 syntax and first-class Windows/Linux support.
 
@@ -34,7 +34,7 @@ task compile: null
 
 - Declared with `set <NAME> = <VALUE>`
 - Referenced as `${NAME}`
-- Exanded before command execution
+- Expanded before command execution
 
 ---
 
@@ -66,7 +66,7 @@ task run all
 ---
 
 ### Environment Variables
-Each task inherits the enviornment and includes built-ins:
+Each task inherits the environment and includes built-ins:
 | Variable      | Description                                       |
 | ------------- | ------------------------------------------------- |
 | `${TASK_NAME}`| Current task name                                 |
