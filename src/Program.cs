@@ -28,23 +28,36 @@ namespace Zenith
             RootCommand rootCommand = new("An app for automating tasks");
 
             Command runCommand = new("run", "Executes a given task");
-            Argument<string> runArg = new Argument<string>("taskName") { Arity = ArgumentArity.ExactlyOne };
+            Argument<string> runArg = new Argument<string>("taskName")
+            {
+                Arity = ArgumentArity.ExactlyOne
+            };
+
+            Option<bool> extOption = new("--ext")
+            {
+                Description = "Runs execution tasks in a new terminal instance"
+            };
 
             runCommand.Arguments.Add(runArg);
+            runCommand.Options.Add(extOption);
 
             runCommand.SetAction(parseResult =>
             {
                 Logger.Instance.Write("Used 'run' command.", LoggerLevel.IGNORE);
+
                 string? taskName = parseResult.GetValue(runArg);
+                bool ext = parseResult.GetValue(extOption);
+
                 if (string.IsNullOrEmpty(taskName))
                 {
                     Logger.Instance.WriteError(new UserInputError("Task name cannot be empty"));
                     return 1;
                 }
 
-                zenith.RunTask(taskName);
+                zenith.RunTask(taskName, ext);
                 return 0;
             });
+
 
             Command listCommand = new("list", "Displays all commands in Taskfile.txt");
 

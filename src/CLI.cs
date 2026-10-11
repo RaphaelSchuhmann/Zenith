@@ -42,7 +42,8 @@ namespace Zenith.CLI
         /// Executes the specified task by resolving its dependencies and variables, then running the task actions.
         /// </summary>
         /// <param name="taskName">The name of the task to execute.</param>
-        public void RunTask(string taskName)
+        /// <param name="ext">Stating if the command can be executed in external terminal.</param>
+        public void RunTask(string taskName, bool ext)
         {
             TaskfileModel taskfileModel = LoadTaskFile();
 
@@ -50,7 +51,7 @@ namespace Zenith.CLI
             exec.Taskfile = taskfileModel;
             exec.ResolveDependencies(taskName);
             exec.ResolveVariables();
-            exec.ExecuteTasks();
+            exec.ExecuteTasks(ext);
         }
 
         /// <summary>

@@ -27,7 +27,8 @@ namespace Zenith.Executor
         /// Executes all tasks currently enqueued in the internal queue in FIFO order.
         /// Each task's commands are executed in sequence.
         /// </summary>
-        public void ExecuteTasks()
+        /// <param name="ext">Stating if the command can be executed in external terminal.</param>
+        public void ExecuteTasks(bool ext)
         {
             if (TasksQueue.Count > 0)
             {
@@ -38,7 +39,7 @@ namespace Zenith.Executor
 
                     foreach (string cmd in commands)
                     {
-                        ExecuteCommand(cmd);
+                        ExecuteCommand(cmd, ext);
                     }
                 }
             }
@@ -49,14 +50,15 @@ namespace Zenith.Executor
         /// otherwise they are executed headless and their output is captured.
         /// </summary>
         /// <param name="cmd">The command to execute.</param>
-        public void ExecuteCommand(string cmd)
+        /// <param name="ext">Stating if the command can be executed in external terminal.</param>
+        public void ExecuteCommand(string cmd, bool ext)
         {
             Logger.Instance.Write($"Executing command: {cmd}", LoggerLevel.IGNORE);
             try
             {
                 bool shouldOpenInTerminal = cmd.StartsWith("./") || cmd.StartsWith(".\\");
 
-                if (shouldOpenInTerminal)
+                if (shouldOpenInTerminal && ext)
                 {
                     LaunchInNewTerminal(cmd);
                 }
@@ -173,10 +175,10 @@ namespace Zenith.Executor
                 FileName = shell,
                 Arguments = finalArgs,
                 WorkingDirectory = Directory.GetCurrentDirectory(),
-                RedirectStandardError = true,
-                RedirectStandardOutput = true,
+                RedirectStandardError = false,
+                RedirectStandardOutput = false,
                 UseShellExecute = false,
-                CreateNoWindow = true
+                CreateNoWindow = false
             };
 
             using (var process = Process.Start(startInfo))
@@ -184,22 +186,17 @@ namespace Zenith.Executor
                 if (process == null)
                 {
                     Logger.Instance.WriteError(new Internal($"Could not start shell process: {shell}"));
-                    return; // Unreachable but needed to silence compiler
+                    return;
                 }
 
                 process.WaitForExit();
 
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();
-
                 int exitCode = process.ExitCode;
-
-                if (!string.IsNullOrWhiteSpace(output))
-                    Console.WriteLine(output);
 
                 if (exitCode != 0)
                 {
-                    Logger.Instance.WriteError(new CommandError($"Command '{cmd}' failed with exit code {exitCode}.\nError output: {error}"));
+                    Logger.Instance.WriteError(new CommandError(
+                        $"Command '{cmd}' failed with exit code {exitCode}."));
                 }
                 else
                 {
