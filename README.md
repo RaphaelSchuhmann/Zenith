@@ -52,12 +52,12 @@ task all: clean, build, test
 ### CLI Usage
 
 ```bash
-task run <taskname>     Execute a given task
+task run <taskname>           Execute a given task
 task run <taskname> --ext     Execute a given task in a new terminal if it executes a binary
-task list               List all available task and dependencies
-task --dry-run <task>   Print what would be executed without running
-task --help             Show usage information
-task --version          Display version and environment details
+task list                     List all available task and dependencies
+task --dry-run <task>         Print what would be executed without running
+task --help                   Show usage information
+task --version                Display version and environment details
 ```
 Example:
 ```bash
